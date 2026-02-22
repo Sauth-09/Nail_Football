@@ -80,14 +80,15 @@ const PhysicsClient = (() => {
                 }
             }
 
-            // Goal detection
+            // Goal detection - returns which SIDE the goal is in
+            // P1 defends LEFT goal, P2 defends RIGHT goal
             if (ball.x < field.goalDepth && ball.y > goalTop && ball.y < goalBottom) {
-                goalScored = { player: 2 };
+                goalScored = { side: 'left' };  // Sol kaleye gol
                 trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000 });
                 break;
             }
             if (ball.x > field.fieldWidth - field.goalDepth && ball.y > goalTop && ball.y < goalBottom) {
-                goalScored = { player: 1 };
+                goalScored = { side: 'right' }; // Sağ kaleye gol
                 trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000 });
                 break;
             }

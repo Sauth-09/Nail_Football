@@ -33,6 +33,12 @@ const GameRenderer = (() => {
     /** @type {boolean} Whether the field has been built */
     let fieldBuilt = false;
 
+    /** @type {number} Current player (1 or 2) */
+    let currentPlayer = 1;
+
+    /** Player colors */
+    const PLAYER_COLORS = { 1: '#2196F3', 2: '#F44336' };
+
     /**
      * Initializes the renderer
      * @param {HTMLCanvasElement} gameCanvas
@@ -155,8 +161,9 @@ const GameRenderer = (() => {
         // Layer 4: Nails
         FieldRenderer.drawNails(ctx, field, scaleX, scaleY);
 
-        // Layer 5: Ball
-        FieldRenderer.drawBall(ctx, ballPosition.x, ballPosition.y, field.ballRadius, scaleX, scaleY);
+        // Layer 5: Ball (with player color)
+        const ballColor = PLAYER_COLORS[currentPlayer] || '#ffffff';
+        FieldRenderer.drawBall(ctx, ballPosition.x, ballPosition.y, field.ballRadius, scaleX, scaleY, ballColor);
 
         // Layer 6: UI Overlay
         if (directionArrow) {
@@ -247,6 +254,7 @@ const GameRenderer = (() => {
         setField,
         setBallPosition,
         setDirectionArrow,
+        setCurrentPlayer: (p) => { currentPlayer = p; },
         fieldToCanvas,
         canvasToField,
         render,

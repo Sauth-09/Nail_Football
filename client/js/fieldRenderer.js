@@ -157,25 +157,26 @@ const FieldRenderer = (() => {
         const goalDepth = field.goalDepth * scaleX;
         const w = field.fieldWidth * scaleX;
 
-        // Left goal
-        drawGoal(ctx, 0, goalTop, goalDepth, goalBottom - goalTop, true, theme);
-
-        // Right goal
-        drawGoal(ctx, w - goalDepth, goalTop, goalDepth, goalBottom - goalTop, false, theme);
+        // Left goal = P1 (blue), Right goal = P2 (red)
+        drawGoal(ctx, 0, goalTop, goalDepth, goalBottom - goalTop, true, theme, '#2196F3');
+        drawGoal(ctx, w - goalDepth, goalTop, goalDepth, goalBottom - goalTop, false, theme, '#F44336');
     }
 
     /**
      * Draws a single goal
      */
-    function drawGoal(ctx, x, y, width, height, isLeft, theme) {
-        // Goal background
-        ctx.fillStyle = theme.goalBg;
+    function drawGoal(ctx, x, y, width, height, isLeft, theme, playerColor) {
+        // Goal background with player color tint
+        const bgColor = playerColor || theme.goalBg;
+        ctx.fillStyle = bgColor;
+        ctx.globalAlpha = 0.25;
         ctx.fillRect(x, y, width, height);
+        ctx.globalAlpha = 1;
 
         // Goal net pattern
-        ctx.strokeStyle = theme.goalNet;
+        ctx.strokeStyle = playerColor || theme.goalNet;
         ctx.lineWidth = 0.5;
-        ctx.globalAlpha = 0.4;
+        ctx.globalAlpha = 0.35;
         const spacing = 8;
         for (let i = 0; i < width; i += spacing) {
             ctx.beginPath();
@@ -191,8 +192,8 @@ const FieldRenderer = (() => {
         }
         ctx.globalAlpha = 1;
 
-        // Goal posts
-        ctx.strokeStyle = theme.goalPost;
+        // Goal posts with player color
+        ctx.strokeStyle = playerColor || theme.goalPost;
         ctx.lineWidth = 4;
         ctx.beginPath();
         // Top post
@@ -203,6 +204,22 @@ const FieldRenderer = (() => {
         // Bottom post
         ctx.lineTo(isLeft ? x + width : x, y + height);
         ctx.stroke();
+
+        // Player color glow on posts
+        if (playerColor) {
+            ctx.shadowColor = playerColor;
+            ctx.shadowBlur = 8;
+            ctx.strokeStyle = playerColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(isLeft ? x + width : x, y);
+            ctx.lineTo(isLeft ? x : x + width, y);
+            ctx.lineTo(isLeft ? x : x + width, y + height);
+            ctx.lineTo(isLeft ? x + width : x, y + height);
+            ctx.stroke();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+        }
     }
 
     /**
@@ -286,12 +303,24 @@ const FieldRenderer = (() => {
      * @param {number} scaleX
      * @param {number} scaleY
      */
-    function drawBall(ctx, x, y, radius, scaleX, scaleY) {
+    function drawBall(ctx, x, y, radius, scaleX, scaleY, playerColor) {
         const bx = x * scaleX;
         const by = y * scaleY;
         const br = radius * Math.min(scaleX, scaleY);
         const pulseScale = AnimationManager.getBallPulseScale();
         const r = br * pulseScale;
+
+        // Player color (default white)
+        const mainColor = playerColor || '#ffffff';
+        const lightColor = playerColor
+            ? adjustBrightness(playerColor, 60)
+            : '#ffffff';
+        const darkColor = playerColor
+            ? adjustBrightness(playerColor, -40)
+            : '#bdbdbd';
+        const midColor = playerColor
+            ? adjustBrightness(playerColor, 20)
+            : '#e0e0e0';
 
         // Ball shadow
         ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
@@ -304,9 +333,9 @@ const FieldRenderer = (() => {
             bx - r * 0.2, by - r * 0.3, r * 0.1,
             bx, by, r
         );
-        gradient.addColorStop(0, '#ffffff');
-        gradient.addColorStop(0.8, '#e0e0e0');
-        gradient.addColorStop(1, '#bdbdbd');
+        gradient.addColorStop(0, lightColor);
+        gradient.addColorStop(0.8, midColor);
+        gradient.addColorStop(1, darkColor);
 
         ctx.fillStyle = gradient;
         ctx.beginPath();
@@ -330,6 +359,33 @@ const FieldRenderer = (() => {
         ctx.beginPath();
         ctx.arc(bx - r * 0.25, by - r * 0.3, r * 0.2, 0, Math.PI * 2);
         ctx.fill();
+
+        // Player color glow
+        if (playerColor) {
+            ctx.shadowColor = playerColor;
+            ctx.shadowBlur = 12;
+            ctx.strokeStyle = playerColor;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(bx, by, r, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    /**
+     * Adjusts hex color brightness
+     * @param {string} hex - Hex color
+     * @param {number} amount - Amount to adjust (-255 to 255)
+     * @returns {string} Adjusted hex color
+     */
+    function adjustBrightness(hex, amount) {
+        const num = parseInt(hex.replace('#', ''), 16);
+        const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+        const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
+        const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+        return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
     }
 
     /**

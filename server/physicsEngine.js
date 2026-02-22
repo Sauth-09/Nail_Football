@@ -109,16 +109,17 @@ function simulateShot(fieldConfig, angle, power, startPos = null) {
             }
         }
 
-        // Step 3: Goal detection
-        // Left goal (Player 2 scores)
+        // Step 3: Goal detection - returns which SIDE
+        // P1 defends LEFT goal, P2 defends RIGHT goal
+        // Left goal
         if (ball.x < goalDepth && ball.y > goalTop && ball.y < goalBottom) {
-            goalScored = { player: 2 };
+            goalScored = { side: 'left' };
             trajectory.push({ x: ball.x, y: ball.y, t: frame * PHYSICS_DT * 1000 });
             break;
         }
-        // Right goal (Player 1 scores)
+        // Right goal
         if (ball.x > fieldWidth - goalDepth && ball.y > goalTop && ball.y < goalBottom) {
-            goalScored = { player: 1 };
+            goalScored = { side: 'right' };
             trajectory.push({ x: ball.x, y: ball.y, t: frame * PHYSICS_DT * 1000 });
             break;
         }

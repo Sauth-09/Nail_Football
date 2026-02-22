@@ -165,6 +165,7 @@ const Game = (() => {
         // Use requestAnimationFrame to ensure layout is calculated
         requestAnimationFrame(() => {
             GameRenderer.setField(currentField);
+            GameRenderer.setCurrentPlayer(currentPlayer);
             GameRenderer.setBallPosition(ballPos.x, ballPos.y);
 
             // Set up input
@@ -404,18 +405,43 @@ const Game = (() => {
      */
     function handleShotComplete(goalScored) {
         if (goalScored) {
-            // Goal!
+            // Determine who benefits from the goal
+            // P1 defends LEFT goal, P2 defends RIGHT goal
+            // Left goal scored → P2 gets the point (whether P1 scored or P2 own-goaled)
+            // Right goal scored → P1 gets the point
+            let scorer;
+            if (goalScored.side === 'right') {
+                // Sağ kaleye gol → P1'in golü (P2'nin kalesi)
+                scorer = 1;
+            } else {
+                // Sol kaleye gol → P2'nin golü (P1'in kalesi)
+                scorer = 2;
+            }
+
+            // Own goal detection for UI feedback
+            const isOwnGoal = (scorer === currentPlayer)
+                ? false  // Normal goal
+                : false; // Not own goal if it's the opponent's benefit
+            // Actually: if kicker scored into their OWN defended goal, it's an own goal
+            const kickerDefendsLeft = (currentPlayer === 1);
+            const scoredInLeft = (goalScored.side === 'left');
+            const ownGoal = (kickerDefendsLeft && scoredInLeft) || (!kickerDefendsLeft && !scoredInLeft);
+
             gameState = 'goal';
-            const scorer = goalScored.player;
             scores[scorer - 1]++;
             UIManager.updateScore(scores[0], scores[1]);
             AnimationManager.triggerScoreBounce(scorer);
 
             // Sound and animation
             SoundManager.playGoal();
-            const goalX = scorer === 1 ? currentField.fieldWidth - 15 : 15;
+            const goalX = goalScored.side === 'right' ? currentField.fieldWidth - 15 : 15;
             const goalY = currentField.fieldHeight / 2;
             AnimationManager.triggerGoalAnimation(scorer, goalX, goalY);
+
+            // Update turn indicator with own goal info
+            if (ownGoal) {
+                UIManager.updateTurnIndicator(currentPlayer, 'owngoal');
+            }
 
             // Vibrate
             const settings = UIManager.getSettings();
@@ -452,6 +478,7 @@ const Game = (() => {
         gameState = 'direction';
         shotAngle = null;
 
+        GameRenderer.setCurrentPlayer(currentPlayer);
         InputHandler.setPhase('direction');
         InputHandler.setBallPosition(ballPos.x, ballPos.y);
         GameRenderer.setDirectionArrow(null);

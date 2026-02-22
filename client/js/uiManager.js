@@ -516,6 +516,9 @@ const UIManager = (() => {
             case 'waiting':
                 action = 'Bekliyor...';
                 break;
+            case 'owngoal':
+                action = 'Kendi Kalesine Gol! ⚠️';
+                break;
             default:
                 action = '';
         }
