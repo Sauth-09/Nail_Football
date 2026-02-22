@@ -113,6 +113,9 @@ const FIELD_CONFIGS = [
             // Sol takım (forvet - 2 çivi)
             { x: 380, y: 170 },
             { x: 380, y: 330 },
+            // Merkez (santradan hızlı golü önlemek için - 2 çivi)
+            { x: 400, y: 250 },
+            { x: 500, y: 250 },
             // Sağ takım (forvet - 2 çivi)
             { x: 520, y: 170 },
             { x: 520, y: 330 },
@@ -265,15 +268,15 @@ const FIELD_CONFIGS = [
         powerBarSpeed: 1.5,
         ballStartPosition: { x: 450, y: 250 },
         nails: [
-            // Stratejik 8 çivi
-            { x: 200, y: 150 },
-            { x: 200, y: 350 },
-            { x: 350, y: 120 },
-            { x: 350, y: 380 },
-            { x: 550, y: 120 },
-            { x: 550, y: 380 },
-            { x: 700, y: 150 },
-            { x: 700, y: 350 }
+            // Stratejik 8 çivi - Merkezi koruyan çapraz dizilim
+            { x: 250, y: 250 }, // Sol merkez savunma
+            { x: 650, y: 250 }, // Sağ merkez savunma
+            { x: 350, y: 150 }, // Üst koridor engeli
+            { x: 350, y: 350 }, // Alt koridor engeli
+            { x: 550, y: 150 }, // Üst koridor engeli
+            { x: 550, y: 350 }, // Alt koridor engeli
+            { x: 450, y: 100 }, // Üst merkez engeli
+            { x: 450, y: 400 }  // Alt merkez engeli
         ]
     },
 
@@ -364,13 +367,13 @@ const FIELD_CONFIGS = [
             const centerY = 250;
             const goalTop = (500 - 120) / 2;
             const goalBottom = (500 + 120) / 2;
-            const totalNails = 30;
-            const maxRadius = 200;
+            const totalNails = 50;
+            const maxRadius = 350;
             const minRadius = 40;
 
             for (let i = 0; i < totalNails; i++) {
                 const t = i / totalNails;
-                const angle = t * Math.PI * 4; // 2 full spirals
+                const angle = t * Math.PI * 6; // 3 full spirals
                 const radius = minRadius + t * (maxRadius - minRadius);
                 const x = centerX + Math.cos(angle) * radius;
                 const y = centerY + Math.sin(angle) * radius;
