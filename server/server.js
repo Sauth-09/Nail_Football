@@ -188,7 +188,7 @@ function getLocalIP() {
 // ═══════════════════════════════════════════════════
 
 function startServer(port) {
-    server.listen(port, () => {
+    server.listen(port, '0.0.0.0', () => {
         const localIP = getLocalIP();
         const localUrl = `http://localhost:${port}`;
         const networkUrl = `http://${localIP}:${port}`;
