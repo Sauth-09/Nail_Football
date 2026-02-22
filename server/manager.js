@@ -42,15 +42,40 @@ const state = {
 
 function getLocalIP() {
     const interfaces = os.networkInterfaces();
+    let backupIP = '127.0.0.1';
+
     for (const name of Object.keys(interfaces)) {
-        if (name.toLowerCase().includes('vmware') || name.toLowerCase().includes('virtualbox')) continue;
+        const lowerName = name.toLowerCase();
+        // Sanal ve VPN bağdaştırıcılarını tamamen atla
+        if (lowerName.includes('vmware') ||
+            lowerName.includes('virtual') ||
+            lowerName.includes('vbox') ||
+            lowerName.includes('vethernet') ||
+            lowerName.includes('wsl') ||
+            lowerName.includes('bluetooth') ||
+            lowerName.includes('tailscale') ||
+            lowerName.includes('zerotier')) {
+            continue;
+        }
+
         for (const iface of interfaces[name]) {
             if (iface.family === 'IPv4' && !iface.internal) {
+                // İlk bulduğumuz "gerçek" yerel ağı döndür
+                // Wi-Fi veya normal Ethernet önceliklidir
                 return iface.address;
             }
         }
     }
-    return '127.0.0.1';
+
+    // Eğer tamamen temiz bir tane bulamadıysa, ilk gördüğü private IP'yi alsın
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                if (backupIP === '127.0.0.1') backupIP = iface.address;
+            }
+        }
+    }
+    return backupIP;
 }
 
 function checkFirewall() {
