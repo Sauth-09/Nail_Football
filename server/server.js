@@ -189,34 +189,26 @@ function getLocalIP() {
 
 function startServer(port) {
     server.listen(port, '0.0.0.0', () => {
-        const localIP = getLocalIP();
-        const localUrl = `http://localhost:${port}`;
-        const networkUrl = `http://${localIP}:${port}`;
+        console.log(`[INFO] Oyun sunucusu baslatildi (Port: ${port})`);
 
-        console.log('');
-        console.log('╔═══════════════════════════════════════════╗');
-        console.log('║     ⚽ ÇİVİ FUTBOLU SUNUCUSU BAŞLADI     ║');
-        console.log('║                                           ║');
-        console.log(`║   Yerel:  ${localUrl}`.padEnd(44, ' ') + '║');
-        console.log(`║   Ağ:     ${networkUrl}`.padEnd(44, ' ') + '║');
-        console.log('║                                           ║');
-        console.log('║   Bağlantı bekliyor...                    ║');
-        console.log('╚═══════════════════════════════════════════╝');
-        console.log('');
+        // Stats emisyonu (Manager.js için)
+        setInterval(() => {
+            const stats = gameManager.getStats();
+            console.log(`[STATS] ${JSON.stringify(stats)}`);
+        }, 2000);
 
-        // Tarayıcıyı otomatik aç
-        const startCommand = process.platform === 'win32' ? 'start' : (process.platform === 'darwin' ? 'open' : 'xdg-open');
-        exec(`${startCommand} ${localUrl}`, (err) => {
-            if (err) console.error('[HATA] Tarayıcı otomatik açılamadı:', err.message);
-        });
+        // Boş odaları temizleme
+        setInterval(() => {
+            gameManager.clearEmptyRooms();
+        }, 60000);
+
     }).on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
-            console.log(`[BİLGİ] Port ${port} kullanımda, ${port + 1} portu deneniyor...`);
-            // Error dinleyicisini kaldır ki tekrar başlatırken sorun olmasın
+            console.log(`[INFO] Port ${port} kullanimda, ${port + 1} portu deneniyor...`);
             server.removeAllListeners('error');
             startServer(port + 1);
         } else {
-            console.error('[HATA] Sunucu başlatılamadı:', err);
+            console.error('[ERROR] Sunucu baslatilamadi:', err);
         }
     });
 }

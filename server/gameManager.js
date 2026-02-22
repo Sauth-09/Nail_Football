@@ -406,6 +406,34 @@ class GameManager {
         const player = room.players.find(p => p.ws === ws);
         return player ? player.id : null;
     }
+
+    /**
+     * Gets current server stats
+     * @returns {Object} Stats object
+     */
+    getStats() {
+        let players = 0;
+        for (const room of this.rooms.values()) {
+            players += room.players.filter(p => p.connected).length;
+        }
+        return {
+            players,
+            rooms: this.rooms.size
+        };
+    }
+
+    /**
+     * Cleans up empty rooms (no connected players)
+     */
+    clearEmptyRooms() {
+        for (const [code, room] of this.rooms.entries()) {
+            const hasConnectedPlayers = room.players.some(p => p.connected);
+            if (!hasConnectedPlayers) {
+                console.log(`[INFO] Bos oda otomatik silindi: ${code}`);
+                this.removeRoom(code);
+            }
+        }
+    }
 }
 
 module.exports = GameManager;

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çivi Futbolu - Sunucu Yöneticisi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">⚽</div>
+            <h2>Pano</h2>
+        </div>
+        <nav>
+            <button class="tab-btn active" data-target="dashboard">
+                <span class="icon">📊</span> Genel Bakış
+            </button>
+            <button class="tab-btn" data-target="network">
+                <span class="icon">🌐</span> Ağ & Bağlantı
+            </button>
+            <button class="tab-btn" data-target="settings">
+                <span class="icon">⚙️</span> Ayarlar
+            </button>
+            <button class="tab-btn" data-target="logs">
+                <span class="icon">📝</span> Konsol
+            </button>
+            <button class="tab-btn" data-target="about">
+                <span class="icon">ℹ️</span> Hakkında
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <button id="btn-kill-manager" class="btn-danger">
+                <span class="icon">🚪</span> Kapat & Çık
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <div class="status-indicator">
+                <div id="status-dot" class="dot false"></div>
+                <span id="status-text">Sunucu Kapalı</span>
+            </div>
+            <div class="header-actions">
+                <button id="btn-start" class="btn-success">Başlat</button>
+                <button id="btn-stop" class="btn-danger" disabled>Durdur</button>
+                <button id="btn-restart" class="btn-warning" disabled>Yeniden Başlat</button>
+            </div>
+        </header>
+
+        <div class="tab-content active" id="dashboard">
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>Bağlı Oyuncular</h3>
+                    <div class="card-value" id="val-players">0</div>
+                </div>
+                <div class="card">
+                    <h3>Aktif Odalar</h3>
+                    <div class="card-value" id="val-rooms">0</div>
+                </div>
+                <div class="card">
+                    <h3>Sunucu Güvenlik Duvarı</h3>
+                    <div class="card-value status-good" id="val-firewall">Kontrol Ediliyor...</div>
+                    <button id="btn-fix-firewall" class="btn-secondary mt-10 hidden">Port İzni Ver (LAN)</button>
+                </div>
+            </div>
+            
+            <div class="card mt-20">
+                <h3>Ağ Adresi (LAN Üzerinden Oynamak İçin)</h3>
+                <div class="network-box">
+                    <input type="text" id="network-url" readonly value="Yükleniyor...">
+                    <button id="btn-copy-url" class="btn-secondary">Kopyala</button>
+                </div>
+                <p class="hint">Bu adresi aynı WiFi ağına (LAN) bağlı diğer cihazların tarayıcısına yazarak oynayabilirsiniz.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="network">
+            <div class="card qr-card">
+                <h3>QR Kod ile Hızlı Giriş</h3>
+                <p>Cihazınızın kamerasını okutarak anında oyuna katılabilirsiniz.</p>
+                <div class="qr-container">
+                    <img id="qr-code" src="" alt="QR Kod">
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="settings">
+            <div class="card">
+                <h3>Başlangıç Ayarları</h3>
+                <div class="setting-item">
+                    <div>
+                        <strong>Windows Başlangıcında Çalıştır</strong>
+                        <p class="hint">Bilgisayar açıldığında sunucu arkaplanda otomatik başlar.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="setting-autostart">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="card mt-20">
+                <h3>Oda & Oyuncu Ayarları</h3>
+                <div class="setting-item">
+                    <div>
+                        <strong>Boş Odaları Otomatik Kapat</strong>
+                        <p class="hint">İçinde oyuncu kalmayan odalar 1 dakika sonra sistemden silinir.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="setting-autoclose" checked disabled>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <p class="hint mt-10" style="color: #4CAF50;">Aktif ve varsayılan olarak devrededir.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="logs">
+            <div class="card logs-card">
+                <div class="logs-header">
+                    <h3>Sunucu Konsolu</h3>
+                    <button id="btn-clear-logs" class="btn-secondary">Temizle</button>
+                </div>
+                <div class="terminal" id="terminal-output"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="about">
+            <div class="card">
+                <h3>Çivi Futbolu Yaratıcısı</h3>
+                <p>2D Fizik Tabanlı, Node.js ve JavaScript destekli Çok Oyunculu Spor Oyunu.</p>
+                <p><strong>Versiyon:</strong> 1.1.0</p>
+                
+                <div class="update-section mt-20">
+                    <button id="btn-check-update" class="btn-secondary">Güncellemeleri Kontrol Et</button>
+                    <p id="update-status" class="mt-10"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Lost Overlay -->
+    <div id="overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2>⚠️ Bağlantı Koptu</h2>
+            <p>Arkaplan yöneticisiyle iletişim kurulamıyor.</p>
+            <p>Arayüz kapatılmış olabilir.</p>
+            <button onclick="location.reload()" class="btn-secondary mt-20">Yeniden Yükle</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
