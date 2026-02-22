@@ -57,6 +57,12 @@ const Game = (() => {
     /** @type {boolean} Whether game is active */
     let gameActive = false;
 
+    /** @type {Object|null} Pending turn change data (queued during animation) */
+    let pendingTurnChange = null;
+
+    /** @type {Object|null} Pending goal scored data (queued during animation) */
+    let pendingGoalScored = null;
+
     // ═══════════════════════════════════════════
     // Başlatma
     // ═══════════════════════════════════════════
@@ -258,6 +264,7 @@ const Game = (() => {
     function update() {
         // Update animations
         AnimationManager.update();
+        EffectsManager.update();
 
         // Timer
         if (matchTimer > 0 && gameState !== 'gameover') {
@@ -293,13 +300,37 @@ const Game = (() => {
 
         // Ball animation playback
         if (gameState === 'animating') {
-            const pos = PhysicsClient.advancePlayback();
-            if (pos) {
-                ballPos.x = pos.x;
-                ballPos.y = pos.y;
-                GameRenderer.setBallPosition(ballPos.x, ballPos.y);
+            // Slow-motion: skip frames based on slow-mo factor
+            const slowFactor = EffectsManager.getSlowMoFactor();
+            const shouldAdvance = slowFactor >= 1.0 || Math.random() < slowFactor;
+
+            if (shouldAdvance) {
+                const prevX = ballPos.x;
+                const prevY = ballPos.y;
+                const pos = PhysicsClient.advancePlayback();
+                if (pos) {
+                    ballPos.x = pos.x;
+                    ballPos.y = pos.y;
+                    GameRenderer.setBallPosition(ballPos.x, ballPos.y);
+
+                    // Calculate speed from frame delta
+                    const dx = ballPos.x - prevX;
+                    const dy = ballPos.y - prevY;
+                    const speed = Math.sqrt(dx * dx + dy * dy);
+
+                    // Update effects with speed
+                    EffectsManager.updateTrail(ballPos.x, ballPos.y, speed);
+                    EffectsManager.updateBallGlow(speed);
+
+                    // Check near-miss
+                    const field = GameRenderer.getField();
+                    EffectsManager.checkNearMiss(ballPos.x, ballPos.y, field);
+                }
             }
             // Playback complete is handled by callback
+        } else {
+            EffectsManager.clearTrail();
+            EffectsManager.updateBallGlow(0);
         }
     }
 
@@ -383,15 +414,23 @@ const Game = (() => {
      * @param {Object} event
      */
     function handleCollisionEvent(event) {
+        // Calculate speed from trajectory context
+        const speed = event.speed || 5; // Default moderate speed
+
         if (event.type === 'nail') {
-            SoundManager.playNailHit();
+            EffectsManager.playHitSound('nail', speed);
             AnimationManager.triggerNailGlow(event.index);
+            EffectsManager.triggerSparks(event.x, event.y, speed);
+            EffectsManager.triggerShake(speed);
+
             const settings = UIManager.getSettings();
             if (settings.particles) {
                 AnimationManager.spawnParticles(event.x, event.y, '#C0C0C0', 3, 2, 15);
             }
         } else if (event.type === 'wall') {
-            SoundManager.playWallHit();
+            EffectsManager.playHitSound('wall', speed);
+            EffectsManager.triggerShake(speed * 0.6);
+
             const settings = UIManager.getSettings();
             if (settings.particles) {
                 AnimationManager.spawnParticles(event.x, event.y, '#8892b0', 2, 1.5, 10);
@@ -437,6 +476,10 @@ const Game = (() => {
             const goalX = goalScored.side === 'right' ? currentField.fieldWidth - 15 : 15;
             const goalY = currentField.fieldHeight / 2;
             AnimationManager.triggerGoalAnimation(scorer, goalX, goalY);
+
+            // Goal effects: slow-mo and net rip
+            EffectsManager.triggerSlowMo(45, 0.3);
+            EffectsManager.triggerNetRip(goalScored.side, currentField.fieldWidth, currentField.fieldHeight);
 
             // Update turn indicator with own goal info
             if (ownGoal) {
@@ -566,6 +609,53 @@ const Game = (() => {
     // ═══════════════════════════════════════════
 
     /**
+     * Processes a turn change (called directly or after animation)
+     * @param {Object} data
+     */
+    function processTurnChange(data) {
+        currentPlayer = data.currentPlayer;
+        ballPos = { ...data.ballPosition };
+        GameRenderer.setBallPosition(ballPos.x, ballPos.y);
+        GameRenderer.setCurrentPlayer(currentPlayer);
+        InputHandler.setBallPosition(ballPos.x, ballPos.y);
+
+        const myId = NetworkManager.getPlayerId();
+        if (currentPlayer === myId) {
+            gameState = 'direction';
+            InputHandler.setPhase('direction');
+        } else {
+            gameState = 'idle';
+            InputHandler.setPhase('idle');
+        }
+        UIManager.updateTurnIndicator(currentPlayer,
+            currentPlayer === myId ? 'direction' : 'waiting'
+        );
+        UIManager.resetPowerBar();
+        AnimationManager.setBallPulse(true);
+        SoundManager.playTurnChange();
+    }
+
+    /**
+     * Processes a goal scored event (called directly or after animation)
+     * @param {Object} data
+     */
+    function processGoalScored(data) {
+        scores = data.scores;
+        UIManager.updateScore(scores[0], scores[1]);
+        SoundManager.playGoal();
+        if (typeof AnimationManager.triggerScoreBounce === 'function') {
+            AnimationManager.triggerScoreBounce(data.scoringPlayer);
+        }
+        if (currentField) {
+            AnimationManager.triggerGoalAnimation(data.scoringPlayer,
+                data.scoringPlayer === 1 ? currentField.fieldWidth - 15 : 15,
+                currentField.fieldHeight / 2
+            );
+        }
+        // Ball reset and state transition handled by delayed TURN_CHANGE
+    }
+
+    /**
      * Handles incoming network messages
      * @param {Object} data
      */
@@ -590,8 +680,11 @@ const Game = (() => {
                     `${data.playerName} katıldı! Saha seçimi yapılıyor...`,
                     'success'
                 );
-                // Show field select for host
-                UIManager.showFieldSelect();
+                break;
+
+            case 'FIELD_LIST':
+                // Both host and joiner receive this - show field select
+                UIManager.showFieldSelectWithFields(data.fields, gameMode);
                 break;
 
             case 'FIELD_SELECTED':
@@ -607,26 +700,47 @@ const Game = (() => {
                     ballPos = { ...data.initialState.ballPosition };
                     gameState = 'direction';
                     gameActive = true;
+                    shotAngle = null;
 
-                    GameRenderer.setField(currentField);
-                    GameRenderer.setBallPosition(ballPos.x, ballPos.y);
-                    InputHandler.setBallPosition(ballPos.x, ballPos.y);
+                    // Configure timer
+                    const mpSettings = UIManager.getSettings();
+                    matchTimer = mpSettings.matchTime || 0;
+                    lastTimerTick = Date.now();
 
-                    const myId = NetworkManager.getPlayerId();
-                    if (currentPlayer === myId) {
-                        InputHandler.setPhase('direction');
-                    } else {
-                        InputHandler.setPhase('idle');
-                    }
-
+                    // IMPORTANT: Show game screen FIRST so container has dimensions
                     UIManager.showScreen('game-screen');
                     UIManager.updateScore(scores[0], scores[1]);
+                    UIManager.updateTimer(matchTimer);
+                    UIManager.showPowerBar(false);
+                    UIManager.resetPowerBar();
+
+                    const myId = NetworkManager.getPlayerId();
                     UIManager.updateTurnIndicator(currentPlayer,
                         currentPlayer === myId ? 'direction' : 'waiting'
                     );
 
-                    SoundManager.playStart();
-                    startGameLoop();
+                    // Set up renderer AFTER screen is visible (container needs dimensions)
+                    // Use setTimeout to ensure CSS transition and layout are fully applied
+                    setTimeout(() => {
+                        requestAnimationFrame(() => {
+                            GameRenderer.setField(currentField);
+                            GameRenderer.setCurrentPlayer(currentPlayer);
+                            GameRenderer.setBallPosition(ballPos.x, ballPos.y);
+
+                            InputHandler.setBallPosition(ballPos.x, ballPos.y);
+                            if (currentPlayer === myId) {
+                                InputHandler.setPhase('direction');
+                            } else {
+                                InputHandler.setPhase('idle');
+                            }
+
+                            SoundManager.init();
+                            SoundManager.playStart();
+                            AnimationManager.setBallPulse(true);
+
+                            startGameLoop();
+                        });
+                    }, 100);
                 }
                 break;
 
@@ -637,43 +751,49 @@ const Game = (() => {
                     GameRenderer.setDirectionArrow(null);
                     UIManager.showPowerBar(false);
                     UIManager.updateTurnIndicator(currentPlayer, 'animating');
+                    AnimationManager.setBallPulse(false);
 
                     PhysicsClient.startPlayback(
-                        { trajectory: data.trajectory, collisionEvents: [], goalScored: null },
+                        { trajectory: data.trajectory, collisionEvents: data.collisionEvents || [], goalScored: null },
                         handleCollisionEvent,
-                        () => { } // Will be handled by TURN_CHANGE or GOAL_SCORED
+                        () => {
+                            // Playback complete - process any pending messages
+                            if (pendingGoalScored) {
+                                processGoalScored(pendingGoalScored);
+                                pendingGoalScored = null;
+                                // Delay turn change to let goal animation play
+                                if (pendingTurnChange) {
+                                    const turnData = pendingTurnChange;
+                                    pendingTurnChange = null;
+                                    setTimeout(() => {
+                                        processTurnChange(turnData);
+                                    }, 2500);
+                                }
+                            } else if (pendingTurnChange) {
+                                processTurnChange(pendingTurnChange);
+                                pendingTurnChange = null;
+                            }
+                        }
                     );
                 }
                 break;
 
             case 'TURN_CHANGE':
-                currentPlayer = data.currentPlayer;
-                ballPos = { ...data.ballPosition };
-                GameRenderer.setBallPosition(ballPos.x, ballPos.y);
-                InputHandler.setBallPosition(ballPos.x, ballPos.y);
-
-                const myId2 = NetworkManager.getPlayerId();
-                if (currentPlayer === myId2) {
-                    gameState = 'direction';
-                    InputHandler.setPhase('direction');
+                if (gameState === 'animating' && PhysicsClient.isPlaying()) {
+                    // Queue this message until playback completes
+                    pendingTurnChange = data;
                 } else {
-                    gameState = 'idle';
-                    InputHandler.setPhase('idle');
+                    processTurnChange(data);
                 }
-                UIManager.updateTurnIndicator(currentPlayer,
-                    currentPlayer === myId2 ? 'direction' : 'waiting'
-                );
-                SoundManager.playTurnChange();
                 break;
 
             case 'GOAL_SCORED':
-                scores = data.scores;
-                UIManager.updateScore(scores[0], scores[1]);
-                SoundManager.playGoal();
-                AnimationManager.triggerGoalAnimation(data.scoringPlayer,
-                    data.scoringPlayer === 1 ? currentField.fieldWidth - 15 : 15,
-                    currentField.fieldHeight / 2
-                );
+                if (gameState === 'animating' && PhysicsClient.isPlaying()) {
+                    // Queue this message until playback completes
+                    pendingGoalScored = data;
+                } else {
+                    processGoalScored(data);
+                }
                 break;
 
             case 'GAME_OVER':

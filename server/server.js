@@ -37,8 +37,15 @@ const gameManager = new GameManager();
 // Statik Dosya Servisi
 // ═══════════════════════════════════════════════════
 
-// Serve client files
-app.use(express.static(path.join(__dirname, '..', 'client')));
+// Serve client files (no-cache for development)
+app.use(express.static(path.join(__dirname, '..', 'client'), {
+    etag: false,
+    maxAge: 0,
+    setHeaders: (res) => {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.set('Pragma', 'no-cache');
+    }
+}));
 
 // API: Get all field configs (for field selection)
 app.get('/api/fields', (req, res) => {

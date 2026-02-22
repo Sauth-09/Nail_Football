@@ -17,8 +17,8 @@ const ROOM_TIMEOUT = 5 * 60 * 1000;
 /** @constant {number} Reconnect timeout in ms (30 seconds) */
 const RECONNECT_TIMEOUT = 30 * 1000;
 
-/** @constant {string} Characters for room code generation */
-const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+/** @constant {string} Characters for room code generation (numbers only) */
+const CODE_CHARS = '0123456789';
 
 /**
  * @typedef {Object} Player
@@ -247,13 +247,18 @@ class GameManager {
 
         // Check for goal
         if (result.goalScored) {
-            const scoringPlayer = result.goalScored.player;
+            // P1 defends LEFT goal, P2 defends RIGHT goal
+            // Left goal = P2 scored (into P1's goal), Right goal = P1 scored (into P2's goal)
+            const scoringPlayer = result.goalScored.side === 'left' ? 2 : 1;
             room.gameState.scores[scoringPlayer - 1]++;
 
             // Reset ball to center
             room.gameState.ballPosition = { ...room.fieldConfig.ballStartPosition };
 
-            // Broadcast shot and goal
+            // Switch turns: scored-upon player kicks off
+            room.gameState.currentPlayer = room.gameState.currentPlayer === 1 ? 2 : 1;
+
+            // Broadcast shot, goal, and turn change
             this.broadcastToRoom(room, {
                 type: 'SHOT_EXECUTED',
                 angle,
@@ -265,6 +270,12 @@ class GameManager {
                 type: 'GOAL_SCORED',
                 scoringPlayer,
                 scores: [...room.gameState.scores]
+            });
+
+            this.broadcastToRoom(room, {
+                type: 'TURN_CHANGE',
+                currentPlayer: room.gameState.currentPlayer,
+                ballPosition: { ...room.gameState.ballPosition }
             });
 
             // Check game over conditions

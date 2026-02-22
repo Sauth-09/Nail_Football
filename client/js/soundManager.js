@@ -203,6 +203,7 @@ const SoundManager = (() => {
         resume,
         setVolume,
         setSfxEnabled,
+        playTone,
         playKick,
         playNailHit,
         playWallHit,

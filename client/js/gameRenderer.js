@@ -161,7 +161,12 @@ const GameRenderer = (() => {
         // Layer 4: Nails
         FieldRenderer.drawNails(ctx, field, scaleX, scaleY);
 
-        // Layer 5: Ball (with player color)
+        // Layer 5a: Effects before ball (trail, glow)
+        if (typeof EffectsManager !== 'undefined') {
+            EffectsManager.drawBeforeBall(ctx, ballPosition.x, ballPosition.y, field.ballRadius, scaleX, scaleY);
+        }
+
+        // Layer 5b: Ball (with player color)
         const ballColor = PLAYER_COLORS[currentPlayer] || '#ffffff';
         FieldRenderer.drawBall(ctx, ballPosition.x, ballPosition.y, field.ballRadius, scaleX, scaleY, ballColor);
 
@@ -170,8 +175,13 @@ const GameRenderer = (() => {
             drawDirectionArrow(ctx, directionArrow.angle);
         }
 
-        // Particles
+        // Layer 7: Particles
         AnimationManager.drawParticles(ctx, 0, 0, Math.min(scaleX, scaleY));
+
+        // Layer 8: Effects after ball (net rip, near-miss text)
+        if (typeof EffectsManager !== 'undefined') {
+            EffectsManager.draw(ctx, scaleX, scaleY);
+        }
 
         ctx.restore();
     }

@@ -36,6 +36,9 @@ const UIManager = (() => {
     /** @type {number} Total how-to slides */
     const TOTAL_HOWTO_SLIDES = 5;
 
+    /** @type {boolean} Whether current field select is for multiplayer */
+    let isMultiplayerFieldSelect = false;
+
     /**
      * Initializes the UI manager
      */
@@ -103,7 +106,16 @@ const UIManager = (() => {
         if (btnStartGame) btnStartGame.addEventListener('click', () => {
             SoundManager.playClick();
             if (selectedFieldId && typeof Game !== 'undefined') {
-                Game.startGame(selectedFieldId);
+                if (isMultiplayerFieldSelect) {
+                    // Multiplayer: send field selection and confirm to server
+                    NetworkManager.selectField(selectedFieldId);
+                    NetworkManager.confirmField();
+                    btnStartGame.disabled = true;
+                    btnStartGame.textContent = 'Başlatılıyor...';
+                } else {
+                    // Local mode: start game directly
+                    Game.startGame(selectedFieldId);
+                }
             }
         });
 
@@ -136,9 +148,9 @@ const UIManager = (() => {
         if (btnJoinRoom) btnJoinRoom.addEventListener('click', () => {
             SoundManager.playClick();
             const name = document.getElementById('player-name-input').value.trim() || 'Oyuncu 2';
-            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+            const code = document.getElementById('room-code-input').value.trim();
             if (!code || code.length !== 4) {
-                setLobbyStatus('Geçerli bir oda kodu girin!', 'error');
+                setLobbyStatus('4 haneli oda kodunu girin!', 'error');
                 return;
             }
             if (typeof Game !== 'undefined') Game.setMode('multiplayer');
@@ -255,6 +267,17 @@ const UIManager = (() => {
             settings.vibration = settingVibration.value === '1';
             saveSettings();
         });
+
+        // Effects toggles
+        const fxKeys = ['sparks', 'speedTrail', 'screenShake', 'goalNetRip', 'goalSlowMo', 'ballGlow', 'nearMiss', 'hitSounds'];
+        fxKeys.forEach(key => {
+            const el = document.getElementById('fx-' + key);
+            if (el) el.addEventListener('change', () => {
+                if (typeof EffectsManager !== 'undefined') {
+                    EffectsManager.setSetting(key, el.checked);
+                }
+            });
+        });
     }
 
     /**
@@ -280,6 +303,14 @@ const UIManager = (() => {
             .then(fields => {
                 availableFields = fields;
                 buildFieldGallery(fields);
+                isMultiplayerFieldSelect = false;
+                // Reset start button for local mode
+                const btnStartGame = document.getElementById('btn-start-game');
+                if (btnStartGame) {
+                    btnStartGame.style.display = '';
+                    btnStartGame.disabled = false;
+                    btnStartGame.textContent = 'OYUNU BAŞLAT';
+                }
                 showScreen('field-select');
             })
             .catch(() => {
@@ -289,12 +320,45 @@ const UIManager = (() => {
                     .then(fields => {
                         availableFields = fields;
                         buildFieldGallery(fields);
+                        isMultiplayerFieldSelect = false;
                         showScreen('field-select');
                     })
                     .catch(err => {
                         console.error('[ERROR] Saha verileri yüklenemedi:', err);
                     });
             });
+    }
+
+    /**
+     * Shows the field selection screen with provided fields (for multiplayer)
+     * @param {Array} fields - Field list from server
+     * @param {string} mode - Game mode ('local' or 'multiplayer')
+     */
+    function showFieldSelectWithFields(fields, mode) {
+        availableFields = fields;
+        buildFieldGallery(fields);
+        isMultiplayerFieldSelect = (mode === 'multiplayer');
+
+        const btnStartGame = document.getElementById('btn-start-game');
+        const myId = NetworkManager.getPlayerId();
+
+        if (isMultiplayerFieldSelect && myId !== 1) {
+            // Joiner: hide start button, show waiting message
+            if (btnStartGame) {
+                btnStartGame.textContent = 'Kurucu sahayı seçiyor...';
+                btnStartGame.disabled = true;
+                btnStartGame.style.display = '';
+            }
+        } else {
+            // Host or local: show start button normally
+            if (btnStartGame) {
+                btnStartGame.textContent = 'OYUNU BAŞLAT';
+                btnStartGame.disabled = false;
+                btnStartGame.style.display = '';
+            }
+        }
+
+        showScreen('field-select');
     }
 
     /**
@@ -745,6 +809,7 @@ const UIManager = (() => {
         init,
         showScreen,
         showFieldSelect,
+        showFieldSelectWithFields,
         updateScore,
         updateTimer,
         updateTurnIndicator,

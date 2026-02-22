@@ -8,7 +8,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>⚽ Çivi Futbolu - Nail Football</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="futbol.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="futbol.ico" type="image/x-icon">
+    <link rel="stylesheet" href="css/styles.css?v=5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -18,13 +20,26 @@
     <!-- Ana Menü -->
     <!-- ═══════════════════════════════════════ -->
     <div id="main-menu" class="screen active">
+        <!-- Football field background decoration -->
+        <div class="field-bg">
+            <div class="field-line center-line"></div>
+            <div class="field-line center-circle"></div>
+            <div class="field-line penalty-left"></div>
+            <div class="field-line penalty-right"></div>
+            <div class="floating-ball ball-1">⚽</div>
+            <div class="floating-ball ball-2">⚽</div>
+            <div class="floating-ball ball-3">⚽</div>
+            <div class="stadium-glow"></div>
+        </div>
         <div class="menu-container">
             <div class="menu-header">
-                <h1 class="game-title">⚽ ÇİVİ FUTBOLU</h1>
-                <p class="game-subtitle">Nail Football</p>
+                <img src="futbol.ico" alt="Çivi Futbolu Logo" class="game-logo">
+                <h1 class="game-title">ÇİVİ FUTBOLU</h1>
+                <p class="game-subtitle">⚡ NAIL FOOTBALL ⚡</p>
+                <p class="game-tagline">Fizik tabanlı heyecan dolu futbol!</p>
             </div>
             <div class="menu-buttons">
-                <button id="btn-local" class="menu-btn primary">
+                <button id="btn-local" class="menu-btn primary pulse-btn">
                     <span class="btn-icon">🎮</span>
                     <span class="btn-text">TEK CİHAZ (2 Kişi)</span>
                 </button>
@@ -42,7 +57,7 @@
                 </button>
             </div>
             <div class="menu-footer">
-                <p class="footer-text">Yerel ağda arkadaşlarınla oyna!</p>
+                <p class="footer-text">🏟️ Yerel ağda arkadaşlarınla oyna!</p>
                 <p class="version">v1.0.0</p>
             </div>
         </div>
@@ -86,7 +101,8 @@
                 </button>
                 <div class="lobby-divider">veya</div>
                 <div class="join-room-row">
-                    <input type="text" id="room-code-input" class="text-input code-input" placeholder="Oda Kodu" maxlength="4">
+                    <input type="tel" id="room-code-input" class="text-input code-input" 
+                       placeholder="0000" maxlength="4" pattern="[0-9]*" inputmode="numeric">
                     <button id="btn-join-room" class="menu-btn secondary">KATIL</button>
                 </div>
             </div>
@@ -171,6 +187,41 @@
                         <option value="1" selected>Açık</option>
                         <option value="0">Kapalı</option>
                     </select>
+                </div>
+            </div>
+            <div class="settings-group">
+                <h3>⚡ Efektler</h3>
+                <div class="setting-row">
+                    <label>Çivi Kıvılcımları:</label>
+                    <input type="checkbox" id="fx-sparks" checked>
+                </div>
+                <div class="setting-row">
+                    <label>Hız İzi:</label>
+                    <input type="checkbox" id="fx-speedTrail" checked>
+                </div>
+                <div class="setting-row">
+                    <label>Ekran Sarsıntısı:</label>
+                    <input type="checkbox" id="fx-screenShake" checked>
+                </div>
+                <div class="setting-row">
+                    <label>Kale Ağı Yırtılma:</label>
+                    <input type="checkbox" id="fx-goalNetRip" checked>
+                </div>
+                <div class="setting-row">
+                    <label>Gol Slow-Motion:</label>
+                    <input type="checkbox" id="fx-goalSlowMo" checked>
+                </div>
+                <div class="setting-row">
+                    <label>Top Parlaması:</label>
+                    <input type="checkbox" id="fx-ballGlow" checked>
+                </div>
+                <div class="setting-row">
+                    <label>Yakın Kaçış Yazısı:</label>
+                    <input type="checkbox" id="fx-nearMiss" checked>
+                </div>
+                <div class="setting-row">
+                    <label>Çarpma Ses Varyasyonları:</label>
+                    <input type="checkbox" id="fx-hitSounds" checked>
                 </div>
             </div>
         </div>
@@ -313,14 +364,15 @@
     </div>
 
     <!-- JavaScript Modules -->
-    <script src="js/soundManager.js"></script>
-    <script src="js/animationManager.js"></script>
-    <script src="js/physicsClient.js"></script>
-    <script src="js/fieldRenderer.js"></script>
-    <script src="js/gameRenderer.js"></script>
-    <script src="js/inputHandler.js"></script>
-    <script src="js/networkManager.js"></script>
-    <script src="js/uiManager.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/soundManager.js?v=5"></script>
+    <script src="js/animationManager.js?v=5"></script>
+    <script src="js/effectsManager.js?v=5"></script>
+    <script src="js/physicsClient.js?v=5"></script>
+    <script src="js/fieldRenderer.js?v=5"></script>
+    <script src="js/gameRenderer.js?v=5"></script>
+    <script src="js/inputHandler.js?v=5"></script>
+    <script src="js/networkManager.js?v=5"></script>
+    <script src="js/uiManager.js?v=5"></script>
+    <script src="js/main.js?v=5"></script>
 </body>
 </html>

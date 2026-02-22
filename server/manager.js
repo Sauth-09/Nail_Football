@@ -2,8 +2,8 @@
  * manager.js - Sunucu Yöneticisi (Admin Panel)
  * 
  * Bu betik, oyun sunucusunu arkaplanda çalıştırır ve 
- * bir web arayüzü (1localhost:3001) üzerinden kontrol edilmesini sağlar.
- * Arayüz kapatıldığında oyunu da kapatır (Heartbeat sistemi).
+ * bir web arayüzü (localhost:3001) üzerinden kontrol edilmesini sağlar.
+ * Sistem tepsisinde ikon gösterir ve oradan kontrol edilir.
  */
 
 const express = require('express');
@@ -13,6 +13,8 @@ const { spawn, exec } = require('child_process');
 const os = require('os');
 const QRCode = require('qrcode');
 const fs = require('fs');
+const logger = require('./logger');
+const trayManager = require('./trayManager');
 
 const MANAGER_PORT = 3001;
 const GAME_PORT = 3000;
@@ -21,7 +23,6 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'managerUI')));
 
 let gameProcess = null;
-let lastHeartbeat = Date.now();
 let isShuttingDown = false;
 
 // State Data
@@ -95,7 +96,7 @@ function checkFirewall() {
 function fixFirewall() {
     state.firewallStatus = 'checking';
     broadcastState();
-    const cmd = `powershell -Command "Start-Process cmd -ArgumentList '/c netsh advfirewall firewall add rule name=\\"CiviFutbolu_LAN\\" dir=in action=allow protocol=TCP localport=${GAME_PORT}' -Verb RunAs"`;
+    const cmd = `powershell -Command "Start-Process cmd -ArgumentList '/c netsh advfirewall firewall add rule name=\\\"CiviFutbolu_LAN\\\" dir=in action=allow protocol=TCP localport=${GAME_PORT}' -Verb RunAs"`;
     exec(cmd, () => {
         setTimeout(checkFirewall, 2000);
     });
@@ -130,7 +131,7 @@ function toggleAutostart(value) {
 function startGameServer() {
     if (gameProcess) return;
 
-    console.log('[MANAGER] Oyun sunucusu baslatiliyor...');
+    logger.log('info', 'Oyun sunucusu başlatılıyor...');
     gameProcess = spawn('node', [path.join(__dirname, 'server.js')], {
         stdio: ['ignore', 'pipe', 'pipe']
     });
@@ -150,16 +151,26 @@ function startGameServer() {
                 broadcastState();
             } catch (e) { }
         } else {
-            broadcastLog(text.trim(), 'info');
+            const trimmed = text.trim();
+            if (trimmed) {
+                logger.log('info', `[GAME] ${trimmed}`);
+                broadcastLog(trimmed, 'info');
+            }
         }
     });
 
     gameProcess.stderr.on('data', (data) => {
-        broadcastLog(data.toString().trim(), 'error');
+        const trimmed = data.toString().trim();
+        if (trimmed) {
+            logger.log('error', `[GAME] ${trimmed}`);
+            broadcastLog(trimmed, 'error');
+        }
     });
 
     gameProcess.on('exit', (code) => {
-        broadcastLog(`Sunucu kapandi (Kod: ${code})`, 'error');
+        const msg = `Sunucu kapandı (Kod: ${code})`;
+        logger.log('info', msg);
+        broadcastLog(msg, code === 0 ? 'info' : 'error');
         gameProcess = null;
         state.isRunning = false;
         state.players = 0;
@@ -170,6 +181,7 @@ function startGameServer() {
 
 function stopGameServer() {
     if (gameProcess) {
+        logger.log('info', 'Sunucu durduruluyor...');
         broadcastLog('Sunucu durduruluyor...', 'info');
         gameProcess.kill('SIGINT'); // Trigger graceful shutdown
         setTimeout(() => {
@@ -186,11 +198,18 @@ const server = app.listen(MANAGER_PORT, '127.0.0.1', async () => {
     state.networkUrl = `http://${getLocalIP()}:${GAME_PORT}`;
     state.qrCodeData = await QRCode.toDataURL(state.networkUrl);
 
-    console.log(`[MANAGER] Pano basladi -> http://localhost:${MANAGER_PORT}`);
+    logger.log('info', `Pano başladı -> http://localhost:${MANAGER_PORT}`);
 
     // Tarayıcıyı aç
     const startCmd = process.platform === 'win32' ? 'start' : 'open';
     exec(`${startCmd} http://localhost:${MANAGER_PORT}`);
+
+    // Sistem tepsisi ikonu başlat
+    trayManager.init({
+        gameUrl: state.networkUrl,
+        managerPort: MANAGER_PORT,
+        onExit: shutdownAll
+    });
 
     checkFirewall();
     checkAutostart();
@@ -204,7 +223,9 @@ let clients = new Set();
 function broadcastState() {
     const msg = JSON.stringify({ type: 'state', data: state });
     for (const client of clients) {
-        client.send(msg);
+        if (client.readyState === 1) {
+            client.send(msg);
+        }
     }
 }
 
@@ -212,7 +233,9 @@ function broadcastLog(text, level) {
     if (!text) return;
     const msg = JSON.stringify({ type: 'log', text, level });
     for (const client of clients) {
-        client.send(msg);
+        if (client.readyState === 1) {
+            client.send(msg);
+        }
     }
 }
 
@@ -224,7 +247,7 @@ wss.on('connection', (ws) => {
         try {
             const data = JSON.parse(message);
             if (data.type === 'ping') {
-                lastHeartbeat = Date.now();
+                // Heartbeat - sadece bağlantı canlılığı için, artık kapatma yok
             } else if (data.type === 'cmd') {
                 handleCommand(data, ws);
             }
@@ -259,28 +282,48 @@ function handleCommand(data, ws) {
             break;
         case 'checkUpdate':
             exec('git fetch && git status', { cwd: path.resolve(__dirname, '..') }, (err, stdout) => {
-                ws.send(JSON.stringify({ type: 'updateStatus', text: stdout || err.message }));
+                ws.send(JSON.stringify({ type: 'updateStatus', text: stdout || (err ? err.message : 'Bilinmeyen hata') }));
             });
+            break;
+        case 'openGame':
+            exec(`start ${state.networkUrl}`);
             break;
     }
 }
 
 // ═══════════════════════════════════════════
-// Heartbeat Kapatıcısı (Güvenlik)
+// Temiz Kapanış
 // ═══════════════════════════════════════════
 
-// Arayüz tarayıcıda kapatılırsa Ping gelmez, 3 saniye sonra her şeyi kapatır
-setInterval(() => {
-    if (isShuttingDown) return;
-    if (Date.now() - lastHeartbeat > 3000) {
-        console.log('[MANAGER] Arayuz kapandi, sistem sonlandiriliyor...');
-        shutdownAll();
-    }
-}, 1000);
-
 function shutdownAll() {
+    if (isShuttingDown) return;
     isShuttingDown = true;
-    if (gameProcess) gameProcess.kill('SIGKILL');
-    console.log('[MANAGER] Cikiliyor...');
-    process.exit(0);
+
+    logger.log('info', 'Sistem kapatılıyor...');
+
+    // Oyun sunucusunu kapat
+    if (gameProcess) {
+        try { gameProcess.kill('SIGKILL'); } catch (e) { }
+    }
+
+    // Tray ikonunu kapat
+    trayManager.shutdown();
+
+    // Manager sunucusunu kapat
+    server.close();
+
+    logger.log('info', 'Çıkış yapıldı.');
+
+    // Kısa gecikme ile çık (logların yazılması için)
+    setTimeout(() => {
+        process.exit(0);
+    }, 500);
 }
+
+// Ctrl+C veya process kill sinyalleri
+process.on('SIGINT', shutdownAll);
+process.on('SIGTERM', shutdownAll);
+process.on('uncaughtException', (err) => {
+    logger.log('error', `Yakalanamayan hata: ${err.message}\n${err.stack}`);
+    shutdownAll();
+});

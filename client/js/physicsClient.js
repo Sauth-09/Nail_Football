@@ -58,25 +58,25 @@ const PhysicsClient = (() => {
             if (ball.y - ball.radius < 0) {
                 ball.y = ball.radius;
                 ball.vy = -ball.vy * field.wallRestitution;
-                collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame });
+                collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
             }
             if (ball.y + ball.radius > field.fieldHeight) {
                 ball.y = field.fieldHeight - ball.radius;
                 ball.vy = -ball.vy * field.wallRestitution;
-                collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame });
+                collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
             }
             if (ball.x - ball.radius < 0) {
                 if (ball.y < goalTop || ball.y > goalBottom) {
                     ball.x = ball.radius;
                     ball.vx = -ball.vx * field.wallRestitution;
-                    collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame });
+                    collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
                 }
             }
             if (ball.x + ball.radius > field.fieldWidth) {
                 if (ball.y < goalTop || ball.y > goalBottom) {
                     ball.x = field.fieldWidth - ball.radius;
                     ball.vx = -ball.vx * field.wallRestitution;
-                    collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame });
+                    collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
                 }
             }
 
@@ -117,7 +117,8 @@ const PhysicsClient = (() => {
 
                     collisionEvents.push({
                         type: 'nail', index: i,
-                        x: nail.x, y: nail.y, frame
+                        x: nail.x, y: nail.y, frame,
+                        speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
                     });
                 }
             }
