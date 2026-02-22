@@ -268,15 +268,29 @@ const FIELD_CONFIGS = [
         powerBarSpeed: 1.5,
         ballStartPosition: { x: 450, y: 250 },
         nails: [
-            // Stratejik 8 çivi - Merkezi koruyan çapraz dizilim
-            { x: 250, y: 250 }, // Sol merkez savunma
-            { x: 650, y: 250 }, // Sağ merkez savunma
-            { x: 350, y: 150 }, // Üst koridor engeli
-            { x: 350, y: 350 }, // Alt koridor engeli
-            { x: 550, y: 150 }, // Üst koridor engeli
-            { x: 550, y: 350 }, // Alt koridor engeli
-            { x: 450, y: 100 }, // Üst merkez engeli
-            { x: 450, y: 400 }  // Alt merkez engeli
+            // Merkez Çaprazlar (4 çivi)
+            { x: 350, y: 150 },
+            { x: 350, y: 350 },
+            { x: 550, y: 150 },
+            { x: 550, y: 350 },
+
+            // Üst ve Alt Orta Duvarlar (4 çivi)
+            { x: 450, y: 80 },
+            { x: 450, y: 130 },
+            { x: 450, y: 370 },
+            { x: 450, y: 420 },
+
+            // Kale Önü Çaprazlar - Sol Kale (4 çivi)
+            { x: 180, y: 120 },
+            { x: 180, y: 380 },
+            { x: 250, y: 250 },
+            { x: 130, y: 250 },
+
+            // Kale Önü Çaprazlar - Sağ Kale (4 çivi)
+            { x: 720, y: 120 },
+            { x: 720, y: 380 },
+            { x: 650, y: 250 },
+            { x: 770, y: 250 }
         ]
     },
 
