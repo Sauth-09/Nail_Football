@@ -42,7 +42,8 @@ const state = {
 
 function getLocalIP() {
     const interfaces = os.networkInterfaces();
-    let backupIP = '127.0.0.1';
+    let bestIP = null;
+    let fallbackIP = '127.0.0.1';
 
     for (const name of Object.keys(interfaces)) {
         const lowerName = name.toLowerCase();
@@ -54,28 +55,30 @@ function getLocalIP() {
             lowerName.includes('wsl') ||
             lowerName.includes('bluetooth') ||
             lowerName.includes('tailscale') ||
-            lowerName.includes('zerotier')) {
+            lowerName.includes('zerotier') ||
+            lowerName.includes('loopback')) {
             continue;
         }
 
         for (const iface of interfaces[name]) {
             if (iface.family === 'IPv4' && !iface.internal) {
-                // İlk bulduğumuz "gerçek" yerel ağı döndür
-                // Wi-Fi veya normal Ethernet önceliklidir
-                return iface.address;
+                // 192.168.56.x bloğu genelde VirtualBox Host-Only ağıdır
+                if (iface.address.startsWith('192.168.56.')) continue;
+                // 172.16.x.x - 172.31.x.x blokları genelde Docker/WSL ağıdır
+                if (iface.address.startsWith('172.')) {
+                    fallbackIP = iface.address; // Zorda kalırsak kullanalım
+                    continue;
+                }
+
+                // Wi-Fi veya normal Ethernet (192.168.1.x vb) önceliklidir
+                bestIP = iface.address;
+                break;
             }
         }
+        if (bestIP) break;
     }
 
-    // Eğer tamamen temiz bir tane bulamadıysa, ilk gördüğü private IP'yi alsın
-    for (const name of Object.keys(interfaces)) {
-        for (const iface of interfaces[name]) {
-            if (iface.family === 'IPv4' && !iface.internal) {
-                if (backupIP === '127.0.0.1') backupIP = iface.address;
-            }
-        }
-    }
-    return backupIP;
+    return bestIP || fallbackIP;
 }
 
 function checkFirewall() {
