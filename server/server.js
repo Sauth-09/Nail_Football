@@ -225,10 +225,15 @@ startServer(currentPort);
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-    console.log('\n[INFO] Sunucu kapatılıyor...');
+    console.log('\n[INFO] Sunucu kapatiliyor...');
     wss.close();
     server.close(() => {
-        console.log('[INFO] Sunucu kapatıldı.');
+        console.log('[INFO] Sunucu kapatildi.');
         process.exit(0);
     });
+    // Force close after 1.5 seconds if keep-alive connections are active
+    setTimeout(() => {
+        console.log('[INFO] Sunucu kapatildi (Zorla).');
+        process.exit(0);
+    }, 1500);
 });
