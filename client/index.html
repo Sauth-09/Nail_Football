@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Çivi Futbolu - Fizik tabanlı sıra bazlı 2 kişilik futbol oyunu">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>⚽ Çivi Futbolu - Nail Football</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Ana Menü -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="main-menu" class="screen active">
+        <div class="menu-container">
+            <div class="menu-header">
+                <h1 class="game-title">⚽ ÇİVİ FUTBOLU</h1>
+                <p class="game-subtitle">Nail Football</p>
+            </div>
+            <div class="menu-buttons">
+                <button id="btn-local" class="menu-btn primary">
+                    <span class="btn-icon">🎮</span>
+                    <span class="btn-text">TEK CİHAZ (2 Kişi)</span>
+                </button>
+                <button id="btn-multiplayer" class="menu-btn secondary">
+                    <span class="btn-icon">🌐</span>
+                    <span class="btn-text">ÇOK OYUNCULU (LAN)</span>
+                </button>
+                <button id="btn-settings" class="menu-btn">
+                    <span class="btn-icon">⚙️</span>
+                    <span class="btn-text">AYARLAR</span>
+                </button>
+                <button id="btn-howto" class="menu-btn">
+                    <span class="btn-icon">📖</span>
+                    <span class="btn-text">NASIL OYNANIR</span>
+                </button>
+            </div>
+            <div class="menu-footer">
+                <p class="footer-text">Yerel ağda arkadaşlarınla oyna!</p>
+                <p class="version">v1.0.0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Saha Seçim Ekranı -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="field-select" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-field" class="back-btn">← Menü</button>
+            <h2>Saha Seçimi</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="field-gallery-wrapper">
+            <button id="field-prev" class="gallery-arrow left">‹</button>
+            <div id="field-gallery" class="field-gallery"></div>
+            <button id="field-next" class="gallery-arrow right">›</button>
+        </div>
+        <button id="btn-start-game" class="menu-btn primary start-btn">OYUNU BAŞLAT</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Multiplayer Lobisi -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="multiplayer-lobby" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-lobby" class="back-btn">← Menü</button>
+            <h2>Çok Oyunculu</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="lobby-container">
+            <div class="lobby-section">
+                <label for="player-name-input">Oyuncu Adın:</label>
+                <input type="text" id="player-name-input" class="text-input" placeholder="Adını yaz..." maxlength="20">
+            </div>
+            <div class="lobby-buttons">
+                <button id="btn-create-room" class="menu-btn primary">
+                    <span class="btn-icon">🏠</span>
+                    <span class="btn-text">ODA OLUŞTUR</span>
+                </button>
+                <div class="lobby-divider">veya</div>
+                <div class="join-room-row">
+                    <input type="text" id="room-code-input" class="text-input code-input" placeholder="Oda Kodu" maxlength="4">
+                    <button id="btn-join-room" class="menu-btn secondary">KATIL</button>
+                </div>
+            </div>
+            <div id="lobby-status" class="lobby-status"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Ayarlar Ekranı -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="settings-screen" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-settings" class="back-btn">← Menü</button>
+            <h2>Ayarlar</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="settings-container">
+            <div class="settings-group">
+                <h3>Oyun Ayarları</h3>
+                <div class="setting-row">
+                    <label>Maç Süresi:</label>
+                    <select id="setting-time">
+                        <option value="180">3 Dakika</option>
+                        <option value="300" selected>5 Dakika</option>
+                        <option value="600">10 Dakika</option>
+                        <option value="0">Süresiz</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>Gol Limiti:</label>
+                    <select id="setting-goal-limit">
+                        <option value="3">3 Gol</option>
+                        <option value="5" selected>5 Gol</option>
+                        <option value="10">10 Gol</option>
+                        <option value="0">Limitsiz</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>Güç Barı Hızı:</label>
+                    <select id="setting-power-speed">
+                        <option value="0.8">Yavaş</option>
+                        <option value="1.5" selected>Normal</option>
+                        <option value="2.5">Hızlı</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-group">
+                <h3>Görsel Ayarlar</h3>
+                <div class="setting-row">
+                    <label>Saha Teması:</label>
+                    <select id="setting-theme">
+                        <option value="grass" selected>Yeşil Çim</option>
+                        <option value="wood">Ahşap Masa</option>
+                        <option value="dark">Koyu Tema</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>Parçacık Efektleri:</label>
+                    <select id="setting-particles">
+                        <option value="1" selected>Açık</option>
+                        <option value="0">Kapalı</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-group">
+                <h3>Ses Ayarları</h3>
+                <div class="setting-row">
+                    <label>Master Ses:</label>
+                    <input type="range" id="setting-volume" min="0" max="100" value="70">
+                    <span id="volume-label">70%</span>
+                </div>
+                <div class="setting-row">
+                    <label>Efekt Sesleri:</label>
+                    <select id="setting-sfx">
+                        <option value="1" selected>Açık</option>
+                        <option value="0">Kapalı</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>Titreşim (Mobil):</label>
+                    <select id="setting-vibration">
+                        <option value="1" selected>Açık</option>
+                        <option value="0">Kapalı</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Nasıl Oynanır Ekranı -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="howto-screen" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-howto" class="back-btn">← Menü</button>
+            <h2>Nasıl Oynanır</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="howto-container">
+            <div id="howto-slides" class="howto-slides">
+                <div class="howto-slide active" data-slide="0">
+                    <div class="howto-icon">🎯</div>
+                    <h3>1. Yönü Seç</h3>
+                    <p>Sıranız geldiğinde ekrana dokunarak veya fareyi sürükleyerek topun gideceği yönü belirleyin.</p>
+                </div>
+                <div class="howto-slide" data-slide="1">
+                    <div class="howto-icon">💪</div>
+                    <h3>2. Gücü Ayarla</h3>
+                    <p>Güç barı otomatik hareket eder. Doğru anda dokunarak veya tıklayarak gücü kilitleyin.</p>
+                </div>
+                <div class="howto-slide" data-slide="2">
+                    <div class="howto-icon">📌</div>
+                    <h3>3. Çivilere Dikkat</h3>
+                    <p>Top çivilere çarparak yön değiştirir. Çivileri avantajınıza kullanın!</p>
+                </div>
+                <div class="howto-slide" data-slide="3">
+                    <div class="howto-icon">⚽</div>
+                    <h3>4. Gol At!</h3>
+                    <p>Topu rakip kaleye sokarak gol atın. Her gol bir puan kazandırır.</p>
+                </div>
+                <div class="howto-slide" data-slide="4">
+                    <div class="howto-icon">🏆</div>
+                    <h3>5. Kazan!</h3>
+                    <p>Sırayla oynayın, en çok golü atan kazanır! Süre dolduğunda veya gol limitine ulaşıldığında oyun biter.</p>
+                </div>
+            </div>
+            <div class="howto-nav">
+                <button id="howto-prev" class="howto-nav-btn" disabled>← Önceki</button>
+                <div id="howto-dots" class="howto-dots"></div>
+                <button id="howto-next" class="howto-nav-btn">Sonraki →</button>
+            </div>
+            <button id="howto-skip" class="menu-btn">Atla</button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Oyun Ekranı -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="game-screen" class="screen">
+        <!-- HUD - Üst Bar -->
+        <div id="game-hud" class="game-hud">
+            <div class="hud-left">
+                <button id="btn-back-game" class="back-btn small">← Menü</button>
+            </div>
+            <div class="hud-score">
+                <div class="score-player score-p1">
+                    <span class="player-indicator p1">🔵</span>
+                    <span id="p1-name" class="player-name">Oyuncu 1</span>
+                    <span id="p1-score" class="score-value">0</span>
+                </div>
+                <div class="score-timer">
+                    <span id="game-timer">05:00</span>
+                </div>
+                <div class="score-player score-p2">
+                    <span id="p2-score" class="score-value">0</span>
+                    <span id="p2-name" class="player-name">Oyuncu 2</span>
+                    <span class="player-indicator p2">🔴</span>
+                </div>
+            </div>
+            <div class="hud-right">
+                <button id="btn-sound-toggle" class="icon-btn">🔊</button>
+                <button id="btn-fullscreen" class="icon-btn">⛶</button>
+            </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div id="canvas-container" class="canvas-container">
+            <canvas id="game-canvas"></canvas>
+        </div>
+
+        <!-- Turn Indicator -->
+        <div id="turn-indicator" class="turn-indicator">
+            <span id="turn-text">🔵 Oyuncu 1'in Sırası - Yönü Seç!</span>
+        </div>
+
+        <!-- Power Bar -->
+        <div id="power-bar-container" class="power-bar-container hidden">
+            <div class="power-bar-bg">
+                <div id="power-bar-fill" class="power-bar-fill"></div>
+                <div id="power-bar-marker" class="power-bar-marker"></div>
+            </div>
+            <div class="power-bar-labels">
+                <span>0%</span>
+                <span>50%</span>
+                <span>100%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Oyun Sonu Modal -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="game-over-modal" class="modal hidden">
+        <div class="modal-content game-over-content">
+            <div class="game-over-trophy">🏆</div>
+            <h2 id="game-over-title">OYUN BİTTİ!</h2>
+            <p id="game-over-winner" class="game-over-winner"></p>
+            <p id="game-over-score" class="game-over-score"></p>
+            <div class="modal-buttons">
+                <button id="btn-replay" class="menu-btn primary">TEKRAR OYNA</button>
+                <button id="btn-to-menu" class="menu-btn">ANA MENÜ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Onay Diyaloğu -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="confirm-modal" class="modal hidden">
+        <div class="modal-content">
+            <p id="confirm-text">Oyundan çıkmak istediğinize emin misiniz?</p>
+            <div class="modal-buttons">
+                <button id="btn-confirm-yes" class="menu-btn primary">Evet</button>
+                <button id="btn-confirm-no" class="menu-btn">Hayır</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Gol Animasyon Overlay -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="goal-overlay" class="goal-overlay hidden">
+        <div id="goal-text" class="goal-text">GOOOL!</div>
+    </div>
+
+    <!-- JavaScript Modules -->
+    <script src="js/soundManager.js"></script>
+    <script src="js/animationManager.js"></script>
+    <script src="js/physicsClient.js"></script>
+    <script src="js/fieldRenderer.js"></script>
+    <script src="js/gameRenderer.js"></script>
+    <script src="js/inputHandler.js"></script>
+    <script src="js/networkManager.js"></script>
+    <script src="js/uiManager.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

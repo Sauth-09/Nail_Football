@@ -1,0 +1,17 @@
+{
+  "name": "nail-football",
+  "version": "1.0.0",
+  "description": "Çivi Futbolu - 2D Fizik Tabanlı Sıra Bazlı Spor Oyunu",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
+  },
+  "keywords": ["game", "football", "nail", "physics", "multiplayer"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.16.0"
+  }
+}
