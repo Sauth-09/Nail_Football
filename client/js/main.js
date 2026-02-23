@@ -588,19 +588,31 @@ const Game = (() => {
      * Checks if it's the AI's turn and triggers it
      */
     function checkAITurn() {
+        console.log("[DEBUG] checkAITurn called.", { gameMode, currentPlayer, hasAiPlayer: !!aiPlayer });
         if (gameMode === 'vs_ai' && aiPlayer && aiPlayer.getPlayerSide() === (currentPlayer === 1 ? 'left' : 'right')) {
+            console.log("[DEBUG] AI Turn Condition Met! Changing phase and scheduling AI...");
             // Disable player input
             InputHandler.setPhase('idle');
             UIManager.updateTurnIndicator(currentPlayer, 'waiting');
 
             // Timeout ensures UI updates before heavy simulation blocks thread
-            setTimeout(() => {
-                const shot = aiPlayer.takeTurn(ballPos, currentField);
-                if (shot && shot.angle !== null && shot.power !== null) {
-                    executeShot(shot.angle, shot.power);
-                } else {
-                    console.error("[ERROR] AI failed to decide a shot.");
-                    nextTurn(); // Fallback if AI fails
+            setTimeout(async () => {
+                try {
+                    const aiGameState = {
+                        ball: ballPos,
+                        field: currentField,
+                        scores: scores
+                    };
+                    const shot = await aiPlayer.takeTurn(aiGameState);
+                    if (shot && shot.angle !== undefined && shot.power !== undefined) {
+                        executeShot(shot.angle, shot.power);
+                    } else {
+                        console.error("[ERROR] AI failed to decide a shot.", shot);
+                        nextTurn(); // Fallback if AI fails
+                    }
+                } catch (err) {
+                    console.error("[ERROR] AI execution failed:", err);
+                    nextTurn();
                 }
             }, 100);
         }
@@ -999,6 +1011,7 @@ const Game = (() => {
     return {
         init,
         setMode,
+        setAIDifficulty,
         startGame,
         restart,
         stop

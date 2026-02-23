@@ -464,14 +464,11 @@ function getFieldById(fieldId) {
  * @returns {Array<Object>} All field configurations
  */
 function getAllFields() {
-    return FIELD_CONFIGS.map(field => ({
-        id: field.id,
-        name: field.name,
-        description: field.description,
-        difficulty: field.difficulty,
-        nailCount: field.isRandom ? '15-35' : field.nails.length,
-        isRandom: field.isRandom || false
-    }));
+    return FIELD_CONFIGS.map(field => {
+        const copy = JSON.parse(JSON.stringify(field));
+        copy.nailCount = field.isRandom ? '15-35' : field.nails.length;
+        return copy;
+    });
 }
 
 module.exports = { FIELD_CONFIGS, getFieldById, getAllFields, generateRandomNails };

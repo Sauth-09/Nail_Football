@@ -169,7 +169,7 @@ const UIManager = (() => {
                 if (card && typeof Game !== 'undefined') {
                     const diff = card.dataset.level; // 'easy', 'medium', 'hard'
                     Game.setAIDifficulty(diff);
-                    showScreen('field-select'); // Zorluk seçilince saha seçimine geç
+                    showFieldSelect(); // Zorluk seçilince saha seçimine geç
                 }
             });
         });
@@ -316,7 +316,7 @@ const UIManager = (() => {
         });
         const settingArrowLength = document.getElementById('setting-arrow-length');
         if (settingArrowLength) settingArrowLength.addEventListener('change', () => {
-            settings.arrowLength = parseInt(settingArrowLength.value) || 120;
+            settings.arrowLength = parseInt(settingArrowLength.value) || 110;
             saveSettings();
         });
         const settingFriction = document.getElementById('setting-friction');
@@ -392,7 +392,7 @@ const UIManager = (() => {
      */
     function showFieldSelect() {
         // Fetch fields from server or use embedded data
-        fetch('/api/fields')
+        fetch('/fields/fieldData.json')
             .then(res => res.json())
             .then(fields => {
                 availableFields = fields;

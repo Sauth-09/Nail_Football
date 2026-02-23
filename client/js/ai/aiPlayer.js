@@ -22,6 +22,10 @@ class AIPlayer {
         this.currentState = 'idle';
     }
 
+    getPlayerSide() {
+        return this.side;
+    }
+
     init(fieldParams) {
         this.simulator = new AISimulator(fieldParams);
 

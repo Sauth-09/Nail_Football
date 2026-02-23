@@ -39,6 +39,8 @@ const GameRenderer = (() => {
     /** Player colors */
     const PLAYER_COLORS = { 1: '#2196F3', 2: '#F44336' };
 
+    let canvasWidth = 0, canvasHeight = 0;
+
     /**
      * Initializes the renderer
      * @param {HTMLCanvasElement} gameCanvas
@@ -48,6 +50,17 @@ const GameRenderer = (() => {
         ctx = canvas.getContext('2d');
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
+
+        // Use ResizeObserver to catch layout changes when screen becomes visible
+        if (window.ResizeObserver) {
+            const container = document.getElementById('canvas-container');
+            if (container) {
+                const ro = new ResizeObserver(() => {
+                    if (field) resizeCanvas();
+                });
+                ro.observe(container);
+            }
+        }
     }
 
     /**
@@ -61,8 +74,6 @@ const GameRenderer = (() => {
         const containerHeight = container.clientHeight;
         const fieldAspect = field.fieldWidth / field.fieldHeight;
         const containerAspect = containerWidth / containerHeight;
-
-        let canvasWidth, canvasHeight;
 
         if (containerAspect > fieldAspect) {
             // Container is wider than field
@@ -206,7 +217,7 @@ const GameRenderer = (() => {
         const bx = ballPosition.x * scaleX;
         const by = ballPosition.y * scaleY;
 
-        let arrowLength = 120; // fallback
+        let arrowLength = 110; // fallback
         if (typeof UIManager !== 'undefined') {
             const settings = UIManager.getSettings();
             if (settings && settings.arrowLength) arrowLength = settings.arrowLength;
