@@ -169,7 +169,7 @@ const UIManager = (() => {
                 if (card && typeof Game !== 'undefined') {
                     const diff = card.dataset.level; // 'easy', 'medium', 'hard'
                     Game.setAIDifficulty(diff);
-                    showFieldSelect(); // Zorluk seçilince saha seçimine geç
+                    showScreen('field-select'); // Zorluk seçilince saha seçimine geç
                 }
             });
         });
@@ -316,7 +316,7 @@ const UIManager = (() => {
         });
         const settingArrowLength = document.getElementById('setting-arrow-length');
         if (settingArrowLength) settingArrowLength.addEventListener('change', () => {
-            settings.arrowLength = parseInt(settingArrowLength.value);
+            settings.arrowLength = parseInt(settingArrowLength.value) || 120;
             saveSettings();
         });
         const settingFriction = document.getElementById('setting-friction');
