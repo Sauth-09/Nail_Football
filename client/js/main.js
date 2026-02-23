@@ -1011,6 +1011,7 @@ const Game = (() => {
     return {
         init,
         setMode,
+        getMode: () => gameMode,
         setAIDifficulty,
         startGame,
         restart,
