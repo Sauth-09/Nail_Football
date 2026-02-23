@@ -193,11 +193,23 @@ class GameManager {
     /**
      * Confirms field selection and starts game
      * @param {string} roomCode - Room code
+     * @param {Object} [settings] - Room settings
      * @returns {Object|null} Game start data
      */
-    confirmField(roomCode) {
+    confirmField(roomCode, settings) {
         const room = this.rooms.get(roomCode);
         if (!room || !room.fieldConfig) return null;
+
+        // Apply custom host settings to the room's simulation
+        if (settings) {
+            if (settings.friction) {
+                room.fieldConfig.friction = settings.friction;
+                console.log(`[INFO] Oda ${roomCode} friction ayarlandı: ${settings.friction}`);
+            }
+            if (settings.goalLimit !== undefined) {
+                room.settings.goalLimit = settings.goalLimit;
+            }
+        }
 
         room.state = 'playing';
         room.gameState = {

@@ -183,9 +183,10 @@ const NetworkManager = (() => {
 
     /**
      * Confirms field selection
+     * @param {Object} [settings] - Optional room settings (e.g. friction)
      */
-    function confirmField() {
-        send({ type: 'CONFIRM_FIELD' });
+    function confirmField(settings) {
+        send({ type: 'CONFIRM_FIELD', settings });
     }
 
     /**

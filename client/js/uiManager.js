@@ -155,7 +155,7 @@ const UIManager = (() => {
                 if (isMultiplayerFieldSelect) {
                     // Multiplayer: send field selection and confirm to server
                     NetworkManager.selectField(selectedFieldId);
-                    NetworkManager.confirmField();
+                    NetworkManager.confirmField(getSettings());
                     btnStartGame.disabled = true;
                     btnStartGame.textContent = 'Başlatılıyor...';
                 } else {
@@ -292,10 +292,14 @@ const UIManager = (() => {
             settings.friction = parseFloat(settingFriction.value);
             const label = document.getElementById('friction-label');
             if (label) {
-                const v = settings.friction;
-                if (v < 0.978) label.textContent = 'Kaygan';
-                else if (v < 0.988) label.textContent = 'Orta';
-                else label.textContent = 'Yapışkan';
+                // min: 0.970 (max friction, sticky), max: 0.998 (min friction, slippery)
+                const percent = Math.round(((settings.friction - 0.970) / (0.998 - 0.970)) * 100);
+
+                let text = "Orta";
+                if (percent < 33) text = "Yapışkan";
+                else if (percent > 66) text = "Kaygan";
+
+                label.textContent = `%${percent} - ${text}`;
             }
             saveSettings();
         });
@@ -870,6 +874,7 @@ const UIManager = (() => {
             'setting-time': settings.matchTime,
             'setting-goal-limit': settings.goalLimit,
             'setting-power-speed': settings.powerBarSpeed,
+            'setting-friction': settings.friction,
             'setting-theme': settings.theme,
             'setting-particles': settings.particles ? '1' : '0',
             'setting-volume': settings.volume,
@@ -879,11 +884,20 @@ const UIManager = (() => {
 
         for (const [id, value] of Object.entries(els)) {
             const el = document.getElementById(id);
-            if (el) el.value = value;
+            if (el && value !== undefined) el.value = value;
         }
 
         const volumeLabel = document.getElementById('volume-label');
         if (volumeLabel) volumeLabel.textContent = `${settings.volume}%`;
+
+        const frictionLabel = document.getElementById('friction-label');
+        if (frictionLabel && settings.friction !== undefined) {
+            const percent = Math.round(((settings.friction - 0.970) / (0.998 - 0.970)) * 100);
+            let text = "Orta";
+            if (percent < 33) text = "Yapışkan";
+            else if (percent > 66) text = "Kaygan";
+            frictionLabel.textContent = `%${percent} - ${text}`;
+        }
 
         SoundManager.setVolume(settings.volume);
         SoundManager.setSfxEnabled(settings.sfx);

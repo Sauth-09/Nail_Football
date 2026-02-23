@@ -241,7 +241,7 @@ function handleMessage(ws, message) {
         case 'CONFIRM_FIELD': {
             const roomCode = gameManager.findRoomByWs(ws);
             if (!roomCode) return;
-            gameManager.confirmField(roomCode);
+            gameManager.confirmField(roomCode, message.settings);
             break;
         }
 
