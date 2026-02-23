@@ -68,8 +68,8 @@ const FieldRenderer = (() => {
         const dpr = window.devicePixelRatio || 1;
 
         staticCanvas = document.createElement('canvas');
-        staticCanvas.width = width * dpr;
-        staticCanvas.height = height * dpr;
+        staticCanvas.width = Math.floor(width * dpr);
+        staticCanvas.height = Math.floor(height * dpr);
         const ctx = staticCanvas.getContext('2d');
         ctx.scale(dpr, dpr);
 

@@ -504,7 +504,7 @@ const UIManager = (() => {
             const starCount = field.difficulty || 3;
             const stars = '★'.repeat(starCount) + '☆'.repeat(5 - starCount);
 
-            const nailInfo = field.isRandom ? '15-35 çivi' : `${field.nailCount} çivi`;
+            const nailInfo = field.isRandom ? '15-35 çivi' : `${field.nails ? field.nails.length : 0} çivi`;
 
             card.innerHTML = '';
             card.appendChild(previewDiv);

@@ -77,12 +77,12 @@ const GameRenderer = (() => {
 
         if (containerAspect > fieldAspect) {
             // Container is wider than field
-            canvasHeight = containerHeight;
-            canvasWidth = canvasHeight * fieldAspect;
+            canvasHeight = Math.floor(containerHeight);
+            canvasWidth = Math.floor(canvasHeight * fieldAspect);
         } else {
             // Container is taller than field
-            canvasWidth = containerWidth;
-            canvasHeight = canvasWidth / fieldAspect;
+            canvasWidth = Math.floor(containerWidth);
+            canvasHeight = Math.floor(canvasWidth / fieldAspect);
         }
 
         const dpr = window.devicePixelRatio || 1;
@@ -91,9 +91,9 @@ const GameRenderer = (() => {
         canvas.style.width = canvasWidth + 'px';
         canvas.style.height = canvasHeight + 'px';
 
-        // Set physical resolution
-        canvas.width = canvasWidth * dpr;
-        canvas.height = canvasHeight * dpr;
+        // Set physical resolution (rounded to avoid sub-pixel blur)
+        canvas.width = Math.floor(canvasWidth * dpr);
+        canvas.height = Math.floor(canvasHeight * dpr);
 
         // Reset scale before applying new one to prevent stacking
         ctx.setTransform(1, 0, 0, 1, 0, 0);
