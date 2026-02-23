@@ -11,6 +11,8 @@
 
 'use strict';
 
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
 const { WebSocketServer } = require('ws');
@@ -20,6 +22,10 @@ const { exec } = require('child_process');
 
 const GameManager = require('./gameManager');
 const { getAllFields } = require('./fieldConfigs');
+const { connectDB, isDBConnected } = require('./db');
+const playerService = require('./services/playerService');
+const matchService = require('./services/matchService');
+const leaderboardService = require('./services/leaderboardService');
 
 // ═══════════════════════════════════════════════════
 // Sunucu Yapılandırması
@@ -54,6 +60,51 @@ app.use(express.static(path.join(__dirname, '..', 'client'), {
 // API: Get all field configs (for field selection)
 app.get('/api/fields', (req, res) => {
     res.json(getAllFields());
+});
+
+// API: Leaderboard
+app.get('/api/leaderboard', async (req, res) => {
+    try {
+        const type = req.query.type || 'weekly';
+        const data = await leaderboardService.getLeaderboard(type);
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: 'Skor tablosu yüklenemedi' });
+    }
+});
+
+// API: Player profile
+app.get('/api/player/:username', async (req, res) => {
+    try {
+        const player = await playerService.getPlayer(req.params.username);
+        if (!player) return res.status(404).json({ error: 'Oyuncu bulunamadı' });
+        res.json(player);
+    } catch (err) {
+        res.status(500).json({ error: 'Profil yüklenemedi' });
+    }
+});
+
+// API: Player match history
+app.get('/api/player/:username/matches', async (req, res) => {
+    try {
+        const matches = await playerService.getRecentMatches(req.params.username, 20);
+        res.json(matches);
+    } catch (err) {
+        res.status(500).json({ error: 'Maç geçmişi yüklenemedi' });
+    }
+});
+
+// API: Tournament list
+app.get('/api/tournaments', async (req, res) => {
+    try {
+        const Tournament = require('./models/Tournament');
+        const tournaments = await Tournament.find({
+            status: { $in: ['waiting', 'in_progress', 'completed'] }
+        }).sort({ createdAt: -1 }).limit(20).lean();
+        res.json(tournaments);
+    } catch (err) {
+        res.json([]);
+    }
 });
 
 // ═══════════════════════════════════════════════════
@@ -99,6 +150,54 @@ function handleMessage(ws, message) {
     const { type } = message;
 
     switch (type) {
+        // ── Auth ──
+        case 'AUTH_REGISTER': {
+            (async () => {
+                try {
+                    const result = await playerService.registerPlayer(message.username);
+                    if (!result) {
+                        ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Bu kullanıcı adı zaten alınmış' }));
+                        return;
+                    }
+                    ws.playerUsername = result.player.username;
+                    ws.send(JSON.stringify({
+                        type: 'AUTH_SUCCESS',
+                        player: { username: result.player.username, rating: result.player.rating, stats: result.player.stats },
+                        token: result.token
+                    }));
+                    console.log(`[AUTH] Yeni kayıt: ${message.username}`);
+                } catch (err) {
+                    console.error('[AUTH] Kayıt hatası:', err.message);
+                    ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Kayıt sırasında hata oluştu' }));
+                }
+            })();
+            break;
+        }
+
+        case 'AUTH_LOGIN': {
+            (async () => {
+                try {
+                    const player = await playerService.loginByToken(message.token);
+                    if (!player) {
+                        ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Geçersiz oturum. Lütfen yeniden kayıt olun.' }));
+                        return;
+                    }
+                    ws.playerUsername = player.username;
+                    ws.send(JSON.stringify({
+                        type: 'AUTH_SUCCESS',
+                        player: { username: player.username, rating: player.rating, stats: player.stats },
+                        token: message.token
+                    }));
+                    console.log(`[AUTH] Giriş: ${player.username}`);
+                } catch (err) {
+                    console.error('[AUTH] Giriş hatası:', err.message);
+                    ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Giriş sırasında hata oluştu' }));
+                }
+            })();
+            break;
+        }
+
+        // ── Game ──
         case 'CREATE_ROOM': {
             const result = gameManager.createRoom(ws, message.playerName);
             ws.send(JSON.stringify(result));
@@ -147,6 +246,22 @@ function handleMessage(ws, message) {
             if (roomCode) {
                 console.log(`[INFO] Oyuncu hazır: Oda ${roomCode}`);
             }
+            break;
+        }
+
+        // ── Match Recording ──
+        case 'MATCH_RESULT': {
+            (async () => {
+                try {
+                    if (!isDBConnected()) return;
+                    const result = await matchService.recordMatch(message.data);
+                    if (result && result.eloChanges) {
+                        ws.send(JSON.stringify({ type: 'ELO_UPDATE', eloChanges: result.eloChanges }));
+                    }
+                } catch (err) {
+                    console.error('[MATCH] Maç kayıt hatası:', err.message);
+                }
+            })();
             break;
         }
 
@@ -224,7 +339,10 @@ function startServer(port) {
     });
 }
 
-startServer(currentPort);
+// Connect to MongoDB then start server
+connectDB().then(() => {
+    startServer(currentPort);
+});
 
 // Graceful shutdown
 process.on('SIGINT', () => {

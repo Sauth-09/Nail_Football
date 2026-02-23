@@ -97,6 +97,11 @@ const Game = (() => {
             onStatusChange: handleNetworkStatus
         });
 
+        // Initialize new modules
+        if (typeof AuthManager !== 'undefined') AuthManager.init();
+        if (typeof LeaderboardUI !== 'undefined') LeaderboardUI.init();
+        if (typeof TournamentUI !== 'undefined') TournamentUI.init();
+
         console.log('[INFO] Çivi Futbolu hazır!');
     }
 
@@ -824,6 +829,24 @@ const Game = (() => {
             case 'ERROR':
                 UIManager.setLobbyStatus(data.message, 'error');
                 break;
+
+            // Auth messages
+            case 'AUTH_SUCCESS':
+                if (typeof AuthManager !== 'undefined') {
+                    AuthManager.handleAuthSuccess(data);
+                    UIManager.showScreen('main-menu');
+                }
+                break;
+
+            case 'AUTH_ERROR':
+                if (typeof AuthManager !== 'undefined') {
+                    AuthManager.handleAuthError(data.message);
+                }
+                break;
+
+            case 'ELO_UPDATE':
+                console.log('[ELO] Rating değişimi:', data.eloChanges);
+                break;
         }
     }
 
@@ -835,6 +858,10 @@ const Game = (() => {
         switch (status) {
             case 'connected':
                 console.log('[INFO] Sunucuya bağlandı');
+                // Auto-login with token if available
+                if (typeof AuthManager !== 'undefined' && AuthManager.hasToken()) {
+                    AuthManager.loginWithToken();
+                }
                 break;
             case 'disconnected':
                 console.log('[INFO] Sunucu bağlantısı kesildi');

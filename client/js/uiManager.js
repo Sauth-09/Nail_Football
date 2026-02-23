@@ -64,6 +64,9 @@ const UIManager = (() => {
         const btnMultiplayer = document.getElementById('btn-multiplayer');
         const btnSettings = document.getElementById('btn-settings');
         const btnHowto = document.getElementById('btn-howto');
+        const btnTournament = document.getElementById('btn-tournament');
+        const btnLeaderboard = document.getElementById('btn-leaderboard');
+        const btnProfile = document.getElementById('btn-profile');
 
         if (btnLocal) btnLocal.addEventListener('click', () => {
             SoundManager.playClick();
@@ -76,6 +79,31 @@ const UIManager = (() => {
             showScreen('multiplayer-lobby');
         });
 
+        if (btnTournament) btnTournament.addEventListener('click', () => {
+            SoundManager.playClick();
+            showScreen('tournament-screen');
+            if (typeof TournamentUI !== 'undefined') TournamentUI.loadTournamentList();
+        });
+
+        if (btnLeaderboard) btnLeaderboard.addEventListener('click', () => {
+            SoundManager.playClick();
+            showScreen('leaderboard-screen');
+            if (typeof LeaderboardUI !== 'undefined') LeaderboardUI.loadLeaderboard('weekly');
+        });
+
+        if (btnProfile) btnProfile.addEventListener('click', () => {
+            SoundManager.playClick();
+            if (typeof AuthManager !== 'undefined' && !AuthManager.isLoggedIn()) {
+                showScreen('auth-screen');
+            } else {
+                showScreen('profile-screen');
+                if (typeof AuthManager !== 'undefined') {
+                    AuthManager.updateProfileDisplay();
+                    AuthManager.loadRecentMatches();
+                }
+            }
+        });
+
         if (btnSettings) btnSettings.addEventListener('click', () => {
             SoundManager.playClick();
             showScreen('settings-screen');
@@ -84,6 +112,23 @@ const UIManager = (() => {
         if (btnHowto) btnHowto.addEventListener('click', () => {
             SoundManager.playClick();
             showScreen('howto-screen');
+        });
+
+        // Auth buttons
+        const btnAuthRegister = document.getElementById('btn-auth-register');
+        const btnAuthSkip = document.getElementById('btn-auth-skip');
+        if (btnAuthRegister) btnAuthRegister.addEventListener('click', () => {
+            const username = document.getElementById('auth-username')?.value?.trim();
+            if (!username || username.length < 2) {
+                const err = document.getElementById('auth-error');
+                if (err) { err.textContent = 'Kullanıcı adı en az 2 karakter olmalı'; err.style.display = 'block'; }
+                return;
+            }
+            AuthManager.register(username);
+        });
+        if (btnAuthSkip) btnAuthSkip.addEventListener('click', () => {
+            AuthManager.skipAuth();
+            showScreen('main-menu');
         });
 
         // Back buttons

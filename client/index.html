@@ -38,14 +38,30 @@
                 <p class="game-subtitle">⚡ NAIL FOOTBALL ⚡</p>
                 <p class="game-tagline">Fizik tabanlı heyecan dolu futbol!</p>
             </div>
+            <div id="user-info-bar" class="user-info-bar" style="display:none">
+                <span id="user-display-name">👤 —</span>
+                <span id="user-display-elo" class="elo-badge">Elo: —</span>
+            </div>
             <div class="menu-buttons">
                 <button id="btn-local" class="menu-btn primary pulse-btn">
-                    <span class="btn-icon">🎮</span>
-                    <span class="btn-text">TEK CİHAZ (2 Kişi)</span>
+                    <span class="btn-icon">🏠</span>
+                    <span class="btn-text">AYNI EKRANDA OYNA</span>
                 </button>
                 <button id="btn-multiplayer" class="menu-btn secondary">
                     <span class="btn-icon">🌐</span>
-                    <span class="btn-text">ÇOK OYUNCULU (LAN)</span>
+                    <span class="btn-text">AĞ ÜZERİNDE OYNA</span>
+                </button>
+                <button id="btn-tournament" class="menu-btn">
+                    <span class="btn-icon">🏆</span>
+                    <span class="btn-text">TURNUVALAR</span>
+                </button>
+                <button id="btn-leaderboard" class="menu-btn">
+                    <span class="btn-icon">📊</span>
+                    <span class="btn-text">SKOR TABLOSU</span>
+                </button>
+                <button id="btn-profile" class="menu-btn">
+                    <span class="btn-icon">👤</span>
+                    <span class="btn-text">PROFİLİM</span>
                 </button>
                 <button id="btn-settings" class="menu-btn">
                     <span class="btn-icon">⚙️</span>
@@ -57,8 +73,8 @@
                 </button>
             </div>
             <div class="menu-footer">
-                <p class="footer-text">🏟️ Yerel ağda arkadaşlarınla oyna!</p>
-                <p class="version">v1.0.0</p>
+                <p class="footer-text">🌍 Dünya genelinde rakiplerini bul!</p>
+                <p class="version">v2.0.0</p>
             </div>
         </div>
     </div>
@@ -333,6 +349,130 @@
     </div>
 
     <!-- ═══════════════════════════════════════ -->
+    <!-- Auth Ekranı -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="auth-screen" class="screen">
+        <div class="menu-container">
+            <div class="menu-header">
+                <h1 class="game-title">👤 Giriş Yap</h1>
+                <p class="game-tagline">Turnuva ve skor tablosu için kullanıcı adı gerekli</p>
+            </div>
+            <div class="auth-form">
+                <input type="text" id="auth-username" class="text-input" placeholder="Kullanıcı adını yaz..." maxlength="20" minlength="2">
+                <button id="btn-auth-register" class="menu-btn primary">KAYIT OL / GİRİŞ YAP</button>
+                <p id="auth-error" class="auth-error" style="display:none"></p>
+                <button id="btn-auth-skip" class="menu-btn">Atla (Misafir)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Skor Tablosu -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="leaderboard-screen" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-leaderboard" class="back-btn">← Menü</button>
+            <h2>📊 Skor Tablosu</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="leaderboard-container">
+            <div class="leaderboard-tabs">
+                <button class="lb-tab active" data-type="weekly">Haftalık</button>
+                <button class="lb-tab" data-type="monthly">Aylık</button>
+                <button class="lb-tab" data-type="alltime">Tüm Zamanlar</button>
+            </div>
+            <div id="lb-period" class="lb-period"></div>
+            <div id="lb-table-container" class="lb-table-container">
+                <div class="lb-loading">Yükleniyor...</div>
+            </div>
+            <div id="lb-my-rank" class="lb-my-rank" style="display:none"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Turnuva Listesi -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="tournament-screen" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-tournament" class="back-btn">← Menü</button>
+            <h2>🏆 Turnuvalar</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="tournament-container">
+            <div id="tournament-list" class="tournament-list">
+                <div class="lb-loading">Yükleniyor...</div>
+            </div>
+            <button id="btn-create-tournament" class="menu-btn primary">+ YENİ TURNUVA OLUŞTUR</button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Oyuncu Profili -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="profile-screen" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-profile" class="back-btn">← Menü</button>
+            <h2>👤 Profilim</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="profile-container">
+            <div class="profile-header">
+                <h3 id="profile-username">—</h3>
+                <div class="profile-elo">🏆 Elo: <span id="profile-rating">1000</span></div>
+                <div class="profile-joined">📅 Katılım: <span id="profile-joined">—</span></div>
+            </div>
+            <div class="profile-stats">
+                <div class="stat-card"><div class="stat-value" id="profile-matches">0</div><div class="stat-label">Maç</div></div>
+                <div class="stat-card"><div class="stat-value" id="profile-wins">0</div><div class="stat-label">Galibiyet</div></div>
+                <div class="stat-card"><div class="stat-value" id="profile-losses">0</div><div class="stat-label">Mağlubiyet</div></div>
+                <div class="stat-card"><div class="stat-value" id="profile-winrate">0%</div><div class="stat-label">Kazanma</div></div>
+            </div>
+            <div class="profile-extra">
+                <p>⚽ Atılan: <span id="profile-goals-scored">0</span> | Yenilen: <span id="profile-goals-conceded">0</span></p>
+                <p>🔥 Seri: <span id="profile-streak">0</span> | En İyi: <span id="profile-best-streak">0</span></p>
+                <p>🏆 Turnuva: <span id="profile-tournaments-won">0</span>/<span id="profile-tournaments-played">0</span></p>
+            </div>
+            <h4>Son Maçlar</h4>
+            <div id="profile-recent-matches" class="profile-recent-matches">
+                <p class="muted">Henüz maç yok</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Turnuva Oluşturma Modal -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="tournament-create-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>🏆 Yeni Turnuva Oluştur</h2>
+            <div class="form-group">
+                <label>Turnuva Adı:</label>
+                <input type="text" id="tournament-name" class="text-input" placeholder="Turnuva adı..." maxlength="30">
+            </div>
+            <div class="form-group">
+                <label>Kişi Sayısı:</label>
+                <div class="btn-group">
+                    <button class="option-btn" data-value="4">4</button>
+                    <button class="option-btn active" data-value="8">8</button>
+                    <button class="option-btn" data-value="16">16</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Gol Limiti:</label>
+                <div class="btn-group">
+                    <button class="option-btn" data-value="3">3</button>
+                    <button class="option-btn active" data-value="5">5</button>
+                    <button class="option-btn" data-value="7">7</button>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="btn-tournament-cancel" class="menu-btn">İPTAL</button>
+                <button id="btn-tournament-create-confirm" class="menu-btn primary">OLUŞTUR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
     <!-- Oyun Sonu Modal -->
     <!-- ═══════════════════════════════════════ -->
     <div id="game-over-modal" class="modal hidden">
@@ -369,15 +509,18 @@
     </div>
 
     <!-- JavaScript Modules -->
-    <script src="js/soundManager.js?v=5"></script>
-    <script src="js/animationManager.js?v=5"></script>
-    <script src="js/effectsManager.js?v=5"></script>
-    <script src="js/physicsClient.js?v=5"></script>
-    <script src="js/fieldRenderer.js?v=5"></script>
-    <script src="js/gameRenderer.js?v=5"></script>
-    <script src="js/inputHandler.js?v=5"></script>
-    <script src="js/networkManager.js?v=5"></script>
-    <script src="js/uiManager.js?v=5"></script>
-    <script src="js/main.js?v=5"></script>
+    <script src="js/soundManager.js?v=6"></script>
+    <script src="js/animationManager.js?v=6"></script>
+    <script src="js/effectsManager.js?v=6"></script>
+    <script src="js/physicsClient.js?v=6"></script>
+    <script src="js/fieldRenderer.js?v=6"></script>
+    <script src="js/gameRenderer.js?v=6"></script>
+    <script src="js/inputHandler.js?v=6"></script>
+    <script src="js/networkManager.js?v=6"></script>
+    <script src="js/authManager.js?v=6"></script>
+    <script src="js/leaderboard.js?v=6"></script>
+    <script src="js/tournament.js?v=6"></script>
+    <script src="js/uiManager.js?v=6"></script>
+    <script src="js/main.js?v=6"></script>
 </body>
 </html>
