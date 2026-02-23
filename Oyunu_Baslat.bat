@@ -1,31 +1,44 @@
 @echo off
-title Civi Futbolu - Sunucu Yoneticisi
-color 0A
+chcp 65001 >nul
+title ⚽ Çivi Futbolu - Nail Football
 
-echo ===================================================
-echo             CIVI FUTBOLU BASLATICI
-echo ===================================================
+echo.
+echo  ╔══════════════════════════════════════╗
+echo  ║    ⚽ Çivi Futbolu - Nail Football    ║
+echo  ╚══════════════════════════════════════╝
 echo.
 
-cd /d "%~dp0nail-football"
+:: Check if Node.js is available
+where node >nul 2>&1
+if %errorlevel% neq 0 (
+    echo  [!] Node.js bulunamadı!
+    echo  [!] Lütfen nodejs.org'dan Node.js kuruyun.
+    echo  [!] Veya aşağıdaki linkten indirin:
+    echo      https://nodejs.org/dist/v20.11.1/node-v20.11.1-x64.msi
+    echo.
+    pause
+    exit /b 1
+)
 
-:: Gerekli modulleri kontrol et
-if exist "node_modules\" goto start_manager
+echo  [✓] Node.js bulundu
+echo  [*] Bağımlılıklar kontrol ediliyor...
 
-echo [BILGI] Ilk kurulum yapiliyor (Gerekli moduller indiriliyor)...
-echo Lutfen bekleyin...
-call npm install
+:: Install dependencies if needed
+if not exist "node_modules" (
+    echo  [*] npm install yapılıyor...
+    npm install --production 2>nul
+)
+
+echo  [✓] Bağımlılıklar hazır
+echo.
+echo  [*] Sunucu başlatılıyor...
+echo  [*] Oyun açılacak: http://localhost:3000
 echo.
 
-:start_manager
-echo [BILGI] Sunucu Yoneticisi (Pano) arkaplanda baslatiliyor...
-echo.
-echo ===================================================
-echo Lutfen acilan TARAYICI penceresini kullanin.
-echo Siyah konsol penceresini KUCULTEREK arkaplanda
-echo acik birakabilirsiniz.
-echo ===================================================
-echo.
+:: Open browser after a short delay
+start /b cmd /c "timeout /t 2 >nul && start http://localhost:3000"
 
-npm start
+:: Start the server
+node server/server.js
 
+pause
