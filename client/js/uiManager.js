@@ -14,9 +14,10 @@ const UIManager = (() => {
 
     /** @type {Object} Game settings */
     let settings = {
-        matchTime: 300,       // seconds (0 = unlimited)
-        goalLimit: 5,         // (0 = unlimited)
+        matchTime: 300,
+        goalLimit: 5,
         powerBarSpeed: 1.5,
+        friction: 0.985,
         theme: 'grass',
         particles: true,
         volume: 70,
@@ -239,6 +240,18 @@ const UIManager = (() => {
         });
         if (settingPowerSpeed) settingPowerSpeed.addEventListener('change', () => {
             settings.powerBarSpeed = parseFloat(settingPowerSpeed.value);
+            saveSettings();
+        });
+        const settingFriction = document.getElementById('setting-friction');
+        if (settingFriction) settingFriction.addEventListener('input', () => {
+            settings.friction = parseFloat(settingFriction.value);
+            const label = document.getElementById('friction-label');
+            if (label) {
+                const v = settings.friction;
+                if (v < 0.978) label.textContent = 'Kaygan';
+                else if (v < 0.988) label.textContent = 'Orta';
+                else label.textContent = 'Yapışkan';
+            }
             saveSettings();
         });
         if (settingTheme) settingTheme.addEventListener('change', () => {

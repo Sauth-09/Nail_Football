@@ -37,13 +37,17 @@ const gameManager = new GameManager();
 // Statik Dosya Servisi
 // ═══════════════════════════════════════════════════
 
-// Serve client files (no-cache for development)
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
+
+// Serve client files
 app.use(express.static(path.join(__dirname, '..', 'client'), {
-    etag: false,
-    maxAge: 0,
+    etag: true,
+    maxAge: isProduction ? '1d' : 0,
     setHeaders: (res) => {
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-        res.set('Pragma', 'no-cache');
+        if (!isProduction) {
+            res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+            res.set('Pragma', 'no-cache');
+        }
     }
 }));
 

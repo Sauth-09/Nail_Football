@@ -9,10 +9,15 @@ desktop.ini
 # IDE
 .vscode/
 .idea/
+.gemini/
 
 # Logs
+logs/
 *.log
 npm-debug.log*
 
 # Environment
 .env
+
+# Build artifacts
+dist/

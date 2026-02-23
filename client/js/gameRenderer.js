@@ -180,7 +180,7 @@ const GameRenderer = (() => {
 
         // Layer 8: Effects after ball (net rip, near-miss text)
         if (typeof EffectsManager !== 'undefined') {
-            EffectsManager.draw(ctx, scaleX, scaleY);
+            EffectsManager.draw(ctx, scaleX, scaleY, canvas.width, canvas.height);
         }
 
         ctx.restore();

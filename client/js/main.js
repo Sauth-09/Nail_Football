@@ -300,9 +300,8 @@ const Game = (() => {
 
         // Ball animation playback
         if (gameState === 'animating') {
-            // Slow-motion: skip frames based on slow-mo factor
-            const slowFactor = EffectsManager.getSlowMoFactor();
-            const shouldAdvance = slowFactor >= 1.0 || Math.random() < slowFactor;
+            // Deterministic slow-motion frame control
+            const shouldAdvance = EffectsManager.shouldAdvanceFrame();
 
             if (shouldAdvance) {
                 const prevX = ballPos.x;
@@ -398,6 +397,9 @@ const Game = (() => {
         SoundManager.playKick(power);
 
         if (gameMode === 'local') {
+            // Apply friction setting override
+            const settings = UIManager.getSettings();
+            if (settings.friction) currentField.friction = settings.friction;
             // Simulate locally
             const result = PhysicsClient.simulateShot(currentField, angle, power, ballPos);
 

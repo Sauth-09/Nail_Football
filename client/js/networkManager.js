@@ -58,7 +58,8 @@ const NetworkManager = (() => {
                 return;
             }
 
-            const wsUrl = url || `ws://${window.location.host}`;
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = url || `${protocol}//${window.location.host}`;
             console.log(`[INFO] WebSocket bağlanıyor: ${wsUrl}`);
 
             try {
