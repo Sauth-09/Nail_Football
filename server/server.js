@@ -26,6 +26,7 @@ const { connectDB, isDBConnected } = require('./db');
 const playerService = require('./services/playerService');
 const matchService = require('./services/matchService');
 const leaderboardService = require('./services/leaderboardService');
+const tournamentService = require('./services/tournamentService');
 
 // ═══════════════════════════════════════════════════
 // Sunucu Yapılandırması
@@ -104,6 +105,18 @@ app.get('/api/tournaments', async (req, res) => {
         res.json(tournaments);
     } catch (err) {
         res.json([]);
+    }
+});
+
+// API: Tournament detail
+app.get('/api/tournament/:id', async (req, res) => {
+    try {
+        const Tournament = require('./models/Tournament');
+        const tournament = await Tournament.findById(req.params.id).lean();
+        if (!tournament) return res.status(404).json({ error: 'Turnuva bulunamadı' });
+        res.json(tournament);
+    } catch (err) {
+        res.status(500).json({ error: 'Turnuva yüklenemedi' });
     }
 });
 
@@ -265,9 +278,106 @@ function handleMessage(ws, message) {
             break;
         }
 
+        // ── Tournament ──
+        case 'TOURNAMENT_CREATE': {
+            (async () => {
+                try {
+                    const tournament = await tournamentService.createTournament({
+                        name: message.name,
+                        createdBy: ws.playerUsername,
+                        maxPlayers: message.maxPlayers,
+                        goalLimit: message.goalLimit
+                    });
+                    if (tournament) {
+                        ws.send(JSON.stringify({ type: 'TOURNAMENT_CREATED', tournament }));
+                        broadcastAll({ type: 'TOURNAMENT_UPDATED', tournament });
+                    }
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'TOURNAMENT_ERROR', message: 'Turnuva oluşturulamadı' }));
+                }
+            })();
+            break;
+        }
+
+        case 'TOURNAMENT_JOIN': {
+            (async () => {
+                try {
+                    const result = await tournamentService.joinTournament(message.tournamentId, ws.playerUsername);
+                    if (result.error) {
+                        ws.send(JSON.stringify({ type: 'TOURNAMENT_ERROR', message: result.error }));
+                    } else {
+                        broadcastAll({ type: 'TOURNAMENT_UPDATED', tournament: result.tournament });
+                    }
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'TOURNAMENT_ERROR', message: 'Katılma hatası' }));
+                }
+            })();
+            break;
+        }
+
+        case 'TOURNAMENT_LEAVE': {
+            (async () => {
+                try {
+                    const result = await tournamentService.leaveTournament(message.tournamentId, ws.playerUsername);
+                    if (result.error) {
+                        ws.send(JSON.stringify({ type: 'TOURNAMENT_ERROR', message: result.error }));
+                    } else {
+                        broadcastAll({ type: 'TOURNAMENT_UPDATED', tournament: result.tournament });
+                    }
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'TOURNAMENT_ERROR', message: 'Ayrılma hatası' }));
+                }
+            })();
+            break;
+        }
+
+        case 'TOURNAMENT_START': {
+            (async () => {
+                try {
+                    const result = await tournamentService.startTournament(message.tournamentId, ws.playerUsername);
+                    if (result.error) {
+                        ws.send(JSON.stringify({ type: 'TOURNAMENT_ERROR', message: result.error }));
+                    } else {
+                        broadcastAll({ type: 'TOURNAMENT_STARTED', tournament: result.tournament });
+                    }
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'TOURNAMENT_ERROR', message: 'Başlatma hatası' }));
+                }
+            })();
+            break;
+        }
+
+        case 'TOURNAMENT_LIST': {
+            (async () => {
+                try {
+                    const list = await tournamentService.listTournaments();
+                    ws.send(JSON.stringify({ type: 'TOURNAMENT_LIST', tournaments: list }));
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'TOURNAMENT_LIST', tournaments: [] }));
+                }
+            })();
+            break;
+        }
+
         default:
             console.log(`[DEBUG] Bilinmeyen mesaj tipi: ${type}`);
     }
+}
+
+// ═══════════════════════════════════════════════════
+// Broadcast Yardımcıları
+// ═══════════════════════════════════════════════════
+
+/**
+ * Tüm bağlı istemcilere mesaj gönder
+ */
+function broadcastAll(data) {
+    const msg = JSON.stringify(data);
+    wss.clients.forEach(client => {
+        if (client.readyState === 1) { // OPEN
+            client.send(msg);
+        }
+    });
 }
 
 // ═══════════════════════════════════════════════════

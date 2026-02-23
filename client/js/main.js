@@ -561,6 +561,21 @@ const Game = (() => {
 
         UIManager.showGameOver(winner, scores[0], scores[1]);
         console.log(`[INFO] Oyun bitti! Skor: ${scores[0]} - ${scores[1]}`);
+
+        // Record match result to server
+        if (typeof AuthManager !== 'undefined' && AuthManager.isLoggedIn() && gameMode === 'multiplayer') {
+            const settings = UIManager.getSettings();
+            NetworkManager.send({
+                type: 'MATCH_RESULT',
+                data: {
+                    player1: { username: AuthManager.getUsername(), score: scores[0] },
+                    player2: { username: 'Rakip', score: scores[1] },
+                    fieldId: currentField ? currentField.id : 'classic_442',
+                    goalLimit: settings.goalLimit || 5,
+                    totalShots: 0
+                }
+            });
+        }
     }
 
     /**
@@ -846,6 +861,29 @@ const Game = (() => {
 
             case 'ELO_UPDATE':
                 console.log('[ELO] Rating değişimi:', data.eloChanges);
+                if (typeof UIManager !== 'undefined' && UIManager.showGameOverElo) {
+                    UIManager.showGameOverElo(data.eloChanges);
+                }
+                break;
+
+            // Tournament messages
+            case 'TOURNAMENT_CREATED':
+                if (typeof UIManager !== 'undefined') UIManager.showNotification(`🏆 Yeni turnuva: ${data.tournament.name}`);
+            case 'TOURNAMENT_UPDATED':
+                if (typeof TournamentUI !== 'undefined') TournamentUI.handleTournamentUpdate(data.tournament);
+                break;
+
+            case 'TOURNAMENT_STARTED':
+                if (typeof UIManager !== 'undefined') UIManager.showNotification(`🔥 Turnuva başladı: ${data.tournament.name}`);
+                if (typeof TournamentUI !== 'undefined') TournamentUI.handleTournamentStarted(data.tournament);
+                break;
+
+            case 'TOURNAMENT_ERROR':
+                if (typeof TournamentUI !== 'undefined') TournamentUI.handleTournamentError(data.message);
+                break;
+
+            case 'TOURNAMENT_LIST':
+                // handled by rest api
                 break;
         }
     }

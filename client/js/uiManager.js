@@ -712,6 +712,7 @@ const UIManager = (() => {
         const titleEl = document.getElementById('game-over-title');
         const winnerEl = document.getElementById('game-over-winner');
         const scoreEl = document.getElementById('game-over-score');
+        const eloEl = document.getElementById('game-over-elo');
 
         if (titleEl) titleEl.textContent = 'OYUN BİTTİ!';
         if (winnerEl) {
@@ -727,8 +728,62 @@ const UIManager = (() => {
         if (scoreEl) {
             scoreEl.textContent = `${p1Score}  -  ${p2Score}`;
         }
+        if (eloEl) {
+            eloEl.style.display = 'none'; // clear previous
+            eloEl.innerHTML = '';
+        }
 
         showModal('game-over-modal');
+    }
+
+    /**
+     * Show Elo changes in Game Over modal
+     * @param {Object} eloChanges { p1: { old, new, change }, p2: ... }
+     */
+    function showGameOverElo(eloChanges) {
+        const eloEl = document.getElementById('game-over-elo');
+        if (!eloEl || !eloChanges) return;
+
+        // Sadece p1'in değişimini göstersek yeterli (kendisi)
+        const myChange = eloChanges.p1;
+        if (!myChange) return;
+
+        const isPositive = myChange.change >= 0;
+        const changeClass = isPositive ? 'positive' : 'negative';
+        const sign = isPositive ? '+' : '';
+
+        eloEl.innerHTML = `
+            <div class="elo-change">
+                <span>Rating: <strong>${myChange.old} → ${myChange.new}</strong></span>
+                <span class="${changeClass}">(${sign}${myChange.change})</span>
+            </div>
+        `;
+        eloEl.style.display = 'block';
+    }
+
+    /**
+     * Show UI Notification Toast
+     * @param {string} message
+     */
+    function showNotification(message) {
+        let container = document.getElementById('notification-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'notification-container';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'notification-toast';
+        toast.textContent = message;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 4000);
     }
 
     /**
@@ -880,6 +935,8 @@ const UIManager = (() => {
         setLobbyStatus,
         getSettings,
         getSelectedFieldId,
-        toggleFullscreen
+        toggleFullscreen,
+        showGameOverElo,
+        showNotification
     };
 })();

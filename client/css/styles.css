@@ -1707,3 +1707,211 @@ body {
 .option-btn:hover {
     border-color: rgba(100, 255, 218, 0.4);
 }
+
+/* ═══════════════════════════════════════════════ */
+/* Bracket View                                     */
+/* ═══════════════════════════════════════════════ */
+
+.bracket-header {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.bracket-header h3 {
+    color: #ccd6f6;
+    margin: 0 0 6px 0;
+}
+
+.bracket-champion {
+    color: #f59e0b;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.bracket-back-btn {
+    font-size: 12px !important;
+    padding: 4px 12px !important;
+}
+
+.bracket-container {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 10px 0;
+    min-height: 200px;
+}
+
+.bracket-round {
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bracket-round-title {
+    text-align: center;
+    color: #64ffda;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 4px;
+    background: rgba(100, 255, 218, 0.08);
+    border-radius: 6px;
+    margin-bottom: 4px;
+}
+
+.bracket-match {
+    background: rgba(10, 25, 47, 0.8);
+    border: 1px solid rgba(100, 255, 218, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.bracket-match.ready {
+    border-color: rgba(100, 255, 218, 0.3);
+    box-shadow: 0 0 8px rgba(100, 255, 218, 0.1);
+}
+
+.bracket-match.completed {
+    opacity: 0.9;
+}
+
+.bracket-match.in_progress {
+    border-color: #f59e0b;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.bracket-player {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #8892b0;
+    border-bottom: 1px solid rgba(100, 255, 218, 0.05);
+}
+
+.bracket-player:last-child {
+    border-bottom: none;
+}
+
+.bracket-player.match-winner {
+    color: #64ffda;
+    font-weight: 700;
+    background: rgba(100, 255, 218, 0.08);
+}
+
+.bracket-player.match-loser {
+    color: #4a5568;
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.bracket-score {
+    font-weight: 700;
+    min-width: 16px;
+    text-align: center;
+}
+
+/* Participant badges */
+.tournament-participants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.participant-badge {
+    background: rgba(100, 255, 218, 0.1);
+    color: #64ffda;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+.participant-badge.eliminated {
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.tournament-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.tournament-card-actions .menu-btn {
+    font-size: 11px !important;
+    padding: 4px 12px !important;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* Match End Elo Display                            */
+/* ═══════════════════════════════════════════════ */
+
+.game-over-elo {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(100, 255, 218, 0.06);
+    border: 1px solid rgba(100, 255, 218, 0.15);
+    border-radius: 10px;
+}
+
+.elo-change {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    font-size: 14px;
+}
+
+.elo-change .positive {
+    color: #4caf50;
+    font-weight: 700;
+}
+
+.elo-change .negative {
+    color: #f44336;
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* Notification Toast                               */
+/* ═══════════════════════════════════════════════ */
+
+.notification-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    background: rgba(10, 25, 47, 0.95);
+    border: 1px solid rgba(100, 255, 218, 0.3);
+    border-radius: 10px;
+    color: #ccd6f6;
+    font-size: 13px;
+    z-index: 10000;
+    animation: slideInRight 0.3s ease, fadeOut 0.3s ease 3.7s forwards;
+    max-width: 300px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+}
