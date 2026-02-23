@@ -74,6 +74,13 @@ const UIManager = (() => {
             showFieldSelect();
         });
 
+        const btnVsAi = document.getElementById('btn-vs-ai');
+        if (btnVsAi) btnVsAi.addEventListener('click', () => {
+            SoundManager.playClick();
+            if (typeof Game !== 'undefined') Game.setMode('vs_ai');
+            showScreen('ai-difficulty-screen');
+        });
+
         if (btnMultiplayer) btnMultiplayer.addEventListener('click', () => {
             SoundManager.playClick();
             showScreen('multiplayer-lobby');
@@ -141,8 +148,28 @@ const UIManager = (() => {
                         showScreen('main-menu');
                         if (typeof Game !== 'undefined') Game.stop();
                     });
+                } else if (screenId === 'btn-back-field') {
+                    // Eğer AI modundaysak, geri dönünce zorluk seçimine gitsin, yoksa ana menüye
+                    if (typeof Game !== 'undefined' && Game.getMode() === 'vs_ai') {
+                        showScreen('ai-difficulty-screen');
+                    } else {
+                        showScreen('main-menu');
+                    }
                 } else {
                     showScreen('main-menu');
+                }
+            });
+        });
+
+        // AI Difficulty Selection
+        document.querySelectorAll('.difficulty-card .menu-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                SoundManager.playClick();
+                const card = e.target.closest('.difficulty-card');
+                if (card && typeof Game !== 'undefined') {
+                    const diff = card.dataset.level; // 'easy', 'medium', 'hard'
+                    Game.setAIDifficulty(diff);
+                    showFieldSelect(); // Zorluk seçilince saha seçimine geç
                 }
             });
         });
@@ -796,6 +823,51 @@ const UIManager = (() => {
     }
 
     /**
+     * Shows a message bubble from the AI
+     * @param {string} message
+     * @param {string} emoji
+     * @param {number} duration
+     */
+    function showAIMessage(message, emoji = '🤖', duration = 4000) {
+        let container = document.getElementById('ai-message-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'ai-message-container';
+            container.className = 'ai-message-container';
+
+            // Oyun içi HUD'a eklemeye çalış
+            const hud = document.querySelector('.game-hud');
+            if (hud) {
+                hud.appendChild(container);
+            } else {
+                document.body.appendChild(container); // fallback
+            }
+        }
+
+        const bubble = document.createElement('div');
+        bubble.className = 'ai-message-bubble';
+        bubble.innerHTML = `<span class="ai-emoji">${emoji}</span><span class="ai-text">${message}</span>`;
+
+        container.innerHTML = ''; // Bir önceki mesajı temizle
+        container.appendChild(bubble);
+
+        // Animasyon için reflow
+        void bubble.offsetWidth;
+        bubble.classList.add('show');
+
+        setTimeout(() => {
+            if (bubble.parentNode) {
+                bubble.classList.remove('show');
+                setTimeout(() => {
+                    if (bubble.parentNode) {
+                        bubble.parentNode.removeChild(bubble);
+                    }
+                }, 300); // fade out süresi
+            }
+        }, duration);
+    }
+
+    /**
      * Shows a confirmation dialog
      * @param {string} text
      * @param {Function} onConfirm
@@ -957,6 +1029,7 @@ const UIManager = (() => {
         getSelectedFieldId,
         toggleFullscreen,
         showGameOverElo,
-        showNotification
+        showNotification,
+        showAIMessage
     };
 })();

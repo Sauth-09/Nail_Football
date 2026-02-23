@@ -132,6 +132,15 @@ const AuthManager = (() => {
         setEl('profile-tournaments-won', s.tournamentsWon || 0);
         setEl('profile-tournaments-played', s.tournamentsPlayed || 0);
 
+        // --- AI Stats ---
+        const aiStatsStr = localStorage.getItem('nf_ai_stats');
+        let aiStats = { wins: 0, matches: 0 };
+        if (aiStatsStr) {
+            try { aiStats = JSON.parse(aiStatsStr); } catch (e) { }
+        }
+        setEl('profile-ai-matches', aiStats.matches);
+        setEl('profile-ai-wins', aiStats.wins);
+
         if (currentPlayer.createdAt) {
             const d = new Date(currentPlayer.createdAt);
             setEl('profile-joined', d.toLocaleDateString('tr-TR'));

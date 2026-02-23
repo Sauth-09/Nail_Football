@@ -43,7 +43,12 @@
                 <span id="user-display-elo" class="elo-badge">Elo: —</span>
             </div>
             <div class="menu-buttons">
-                <button id="btn-local" class="menu-btn primary pulse-btn">
+                <!-- Yeni AI Modu Butonu -->
+                <button id="btn-vs-ai" class="menu-btn primary pulse-btn">
+                    <span class="btn-icon">🤖</span>
+                    <span class="btn-text">BİLGİSAYARA KARŞI</span>
+                </button>
+                <button id="btn-local" class="menu-btn secondary">
                     <span class="btn-icon">🏠</span>
                     <span class="btn-text">AYNI EKRANDA OYNA</span>
                 </button>
@@ -94,6 +99,63 @@
             <button id="field-next" class="gallery-arrow right">›</button>
         </div>
         <button id="btn-start-game" class="menu-btn primary start-btn">OYUNU BAŞLAT</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- AI Zorluk Seçim Ekranı -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="ai-difficulty-screen" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-ai" class="back-btn">← Menü</button>
+            <h2>🤖 Rakibini Seç</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="difficulty-cards">
+            <div class="difficulty-card" data-level="easy">
+                <div class="card-emoji">😅</div>
+                <div class="card-title">ACEMİ ALİ</div>
+                <div class="card-subtitle">Çaylak Çırak</div>
+                <div class="card-desc">"Yeni öğreniyor, sık hata yapar ama eğlenceli bir rakip!"</div>
+                
+                <div class="card-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Zorluk</span>
+                        <span class="stat-value">🟢 KOLAY</span>
+                    </div>
+                </div>
+                <button class="menu-btn easy">SEÇ</button>
+            </div>
+            
+            <div class="difficulty-card" data-level="medium">
+                <div class="card-emoji">🧐</div>
+                <div class="card-title">USTA HASAN</div>
+                <div class="card-subtitle">Deneyimli Dayı</div>
+                <div class="card-desc">"Tecrübeli ve dengeli. Kolay lokma değil!"</div>
+                
+                <div class="card-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Zorluk</span>
+                        <span class="stat-value">🟡 ORTA</span>
+                    </div>
+                </div>
+                <button class="menu-btn medium">SEÇ</button>
+            </div>
+            
+            <div class="difficulty-card" data-level="hard">
+                <div class="card-emoji">😎</div>
+                <div class="card-title">KRAL KEREM</div>
+                <div class="card-subtitle">Profesyonel Şampiyon</div>
+                <div class="card-desc">"Acımasız ve hesaplı. Yenebilirsen kendini kanıtla!"</div>
+                
+                <div class="card-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Zorluk</span>
+                        <span class="stat-value">🔴 ZOR</span>
+                    </div>
+                </div>
+                <button class="menu-btn hard">SEÇ</button>
+            </div>
+        </div>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
@@ -439,6 +501,7 @@
                 <p>⚽ Atılan: <span id="profile-goals-scored">0</span> | Yenilen: <span id="profile-goals-conceded">0</span></p>
                 <p>🔥 Seri: <span id="profile-streak">0</span> | En İyi: <span id="profile-best-streak">0</span></p>
                 <p>🏆 Turnuva: <span id="profile-tournaments-won">0</span>/<span id="profile-tournaments-played">0</span></p>
+                <p>🤖 AI Modu: <span id="profile-ai-wins">0</span> Galibiyet / <span id="profile-ai-matches">0</span> Maç</p>
             </div>
             <h4>Son Maçlar</h4>
             <div id="profile-recent-matches" class="profile-recent-matches">
@@ -518,6 +581,14 @@
     </div>
 
     <!-- JavaScript Modules -->
+    <!-- AI Modules -->
+    <script src="js/ai/aiSimulator.js?v=6"></script>
+    <script src="js/ai/aiStrategy.js?v=6"></script>
+    <script src="js/ai/aiPersonality.js?v=6"></script>
+    <script src="js/ai/aiAnimator.js?v=6"></script>
+    <script src="js/ai/aiPlayer.js?v=6"></script>
+
+    <!-- Core Modules -->
     <script src="js/soundManager.js?v=6"></script>
     <script src="js/animationManager.js?v=6"></script>
     <script src="js/effectsManager.js?v=6"></script>

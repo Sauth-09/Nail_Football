@@ -18,7 +18,7 @@ const Game = (() => {
     // Oyun Durumu
     // ═══════════════════════════════════════════
 
-    /** @type {string} Game mode: 'local' or 'multiplayer' */
+    /** @type {string} Game mode: 'local' | 'multiplayer' | 'vs_ai' */
     let gameMode = 'local';
 
     /** @type {string} Game state: 'idle', 'direction', 'power', 'animating', 'goal', 'gameover' */
@@ -62,6 +62,14 @@ const Game = (() => {
 
     /** @type {Object|null} Pending goal scored data (queued during animation) */
     let pendingGoalScored = null;
+
+    // ═══════════════════════════════════════════
+    // AI Değişkenleri
+    // ═══════════════════════════════════════════
+    /** @type {AIPlayer|null} The AI player instance */
+    let aiPlayer = null;
+    /** @type {string} Current AI difficulty */
+    let aiDifficulty = 'easy';
 
     // ═══════════════════════════════════════════
     // Başlatma
@@ -111,11 +119,20 @@ const Game = (() => {
 
     /**
      * Sets the game mode
-     * @param {string} mode - 'local' or 'multiplayer'
+     * @param {string} mode - 'local' | 'multiplayer' | 'vs_ai'
      */
     function setMode(mode) {
         gameMode = mode;
         console.log(`[INFO] Oyun modu: ${mode}`);
+    }
+
+    /**
+     * Sets AI Difficulty
+     * @param {string} diff
+     */
+    function setAIDifficulty(diff) {
+        aiDifficulty = diff;
+        console.log(`[INFO] AI Zorluğu: ${diff}`);
     }
 
     // ═══════════════════════════════════════════
@@ -159,6 +176,14 @@ const Game = (() => {
         gameActive = true;
         shotAngle = null;
 
+        // Initialize AI if vs_ai
+        if (gameMode === 'vs_ai') {
+            aiPlayer = new AIPlayer(aiDifficulty, 'right');
+            aiPlayer.init(currentField);
+        } else {
+            aiPlayer = null;
+        }
+
         // Configure timer
         const settings = UIManager.getSettings();
         matchTimer = settings.matchTime || 0;
@@ -200,6 +225,9 @@ const Game = (() => {
 
             // Start game loop
             startGameLoop();
+
+            // Eğer AI başlarsa (çok olası değil ama)
+            checkAITurn();
         });
     }
 
@@ -401,7 +429,7 @@ const Game = (() => {
         // Play kick sound
         SoundManager.playKick(power);
 
-        if (gameMode === 'local') {
+        if (gameMode === 'local' || gameMode === 'vs_ai') {
             // Apply friction setting override
             const settings = UIManager.getSettings();
             if (settings.friction) currentField.friction = settings.friction;
@@ -493,6 +521,16 @@ const Game = (() => {
                 UIManager.updateTurnIndicator(currentPlayer, 'owngoal');
             }
 
+            // AI Reaction for Goal
+            if (gameMode === 'vs_ai' && aiPlayer) {
+                const aiScored = (scorer === (aiPlayer.side === 'left' ? 1 : 2));
+                const event = aiScored ? 'score_goal' : 'concede_goal';
+                const quote = aiPlayer.personality.getQuote(event);
+                setTimeout(() => {
+                    UIManager.showAIMessage(quote, aiPlayer.personality.data.emoji, 4000);
+                }, 1000); // Biraz gecikmeli göster
+            }
+
             // Vibrate
             const settings = UIManager.getSettings();
             if (settings.vibration && navigator.vibrate) {
@@ -542,6 +580,30 @@ const Game = (() => {
         if (settings.vibration && navigator.vibrate) {
             navigator.vibrate(50);
         }
+
+        checkAITurn();
+    }
+
+    /**
+     * Checks if it's the AI's turn and triggers it
+     */
+    function checkAITurn() {
+        if (gameMode === 'vs_ai' && aiPlayer && aiPlayer.getPlayerSide() === (currentPlayer === 1 ? 'left' : 'right')) {
+            // Disable player input
+            InputHandler.setPhase('idle');
+            UIManager.updateTurnIndicator(currentPlayer, 'waiting');
+
+            // Timeout ensures UI updates before heavy simulation blocks thread
+            setTimeout(() => {
+                const shot = aiPlayer.takeTurn(ballPos, currentField);
+                if (shot && shot.angle !== null && shot.power !== null) {
+                    executeShot(shot.angle, shot.power);
+                } else {
+                    console.error("[ERROR] AI failed to decide a shot.");
+                    nextTurn(); // Fallback if AI fails
+                }
+            }, 100);
+        }
     }
 
     /**
@@ -561,6 +623,29 @@ const Game = (() => {
 
         UIManager.showGameOver(winner, scores[0], scores[1]);
         console.log(`[INFO] Oyun bitti! Skor: ${scores[0]} - ${scores[1]}`);
+
+        // AI Reaction for Game Over
+        if (gameMode === 'vs_ai' && aiPlayer && winner !== 0) {
+            const aiWon = (winner === (aiPlayer.side === 'left' ? 1 : 2));
+            const playerWon = !aiWon;
+
+            // Reaksiyon göster
+            const event = aiWon ? 'win' : 'loss';
+            const quote = aiPlayer.personality.getQuote(event);
+            setTimeout(() => {
+                UIManager.showAIMessage(quote, aiPlayer.personality.data.emoji, 5000);
+            }, 500);
+
+            // İstatistik Kaydet 
+            let aiStats = { wins: 0, matches: 0 };
+            const aiStatsStr = localStorage.getItem('nf_ai_stats');
+            if (aiStatsStr) {
+                try { aiStats = JSON.parse(aiStatsStr); } catch (e) { }
+            }
+            aiStats.matches += 1;
+            if (playerWon) aiStats.wins += 1; // User winning vs AI
+            localStorage.setItem('nf_ai_stats', JSON.stringify(aiStats));
+        }
 
         // Record match result to server
         if (typeof AuthManager !== 'undefined' && AuthManager.isLoggedIn() && gameMode === 'multiplayer') {
@@ -624,6 +709,7 @@ const Game = (() => {
         AnimationManager.clearAll();
         InputHandler.setPhase('idle');
         NetworkManager.disconnect();
+        aiPlayer = null; // Reset AI on stop
     }
 
     // ═══════════════════════════════════════════
