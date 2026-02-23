@@ -74,8 +74,19 @@ const GameRenderer = (() => {
             canvasHeight = canvasWidth / fieldAspect;
         }
 
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
+        const dpr = window.devicePixelRatio || 1;
+
+        // Set logical CSS dimensions for layout
+        canvas.style.width = canvasWidth + 'px';
+        canvas.style.height = canvasHeight + 'px';
+
+        // Set physical resolution
+        canvas.width = canvasWidth * dpr;
+        canvas.height = canvasHeight * dpr;
+
+        // Reset scale before applying new one to prevent stacking
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
 
         scaleX = canvasWidth / field.fieldWidth;
         scaleY = canvasHeight / field.fieldHeight;
@@ -156,7 +167,7 @@ const GameRenderer = (() => {
         ctx.translate(shakeOffset.x, shakeOffset.y);
 
         // Layer 1-3: Static field (from cache)
-        FieldRenderer.drawStaticField(ctx);
+        FieldRenderer.drawStaticField(ctx, canvasWidth || canvas.width / (window.devicePixelRatio || 1), canvasHeight || canvas.height / (window.devicePixelRatio || 1));
 
         // Layer 4: Nails
         FieldRenderer.drawNails(ctx, field, scaleX, scaleY);
@@ -180,7 +191,7 @@ const GameRenderer = (() => {
 
         // Layer 8: Effects after ball (net rip, near-miss text)
         if (typeof EffectsManager !== 'undefined') {
-            EffectsManager.draw(ctx, scaleX, scaleY, canvas.width, canvas.height);
+            EffectsManager.draw(ctx, scaleX, scaleY, canvasWidth || canvas.width / (window.devicePixelRatio || 1), canvasHeight || canvas.height / (window.devicePixelRatio || 1));
         }
 
         ctx.restore();

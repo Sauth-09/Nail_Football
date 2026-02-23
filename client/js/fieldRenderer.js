@@ -65,10 +65,13 @@ const FieldRenderer = (() => {
      */
     function buildStaticField(field, width, height) {
         currentField = field;
+        const dpr = window.devicePixelRatio || 1;
+
         staticCanvas = document.createElement('canvas');
-        staticCanvas.width = width;
-        staticCanvas.height = height;
+        staticCanvas.width = width * dpr;
+        staticCanvas.height = height * dpr;
         const ctx = staticCanvas.getContext('2d');
+        ctx.scale(dpr, dpr);
 
         const scaleX = width / field.fieldWidth;
         const scaleY = height / field.fieldHeight;
@@ -225,10 +228,13 @@ const FieldRenderer = (() => {
     /**
      * Draws the cached static field
      * @param {CanvasRenderingContext2D} ctx - Target context
+     * @param {number} width - Logical width
+     * @param {number} height - Logical height
      */
-    function drawStaticField(ctx) {
+    function drawStaticField(ctx, width, height) {
         if (staticCanvas) {
-            ctx.drawImage(staticCanvas, 0, 0);
+            // Draw high-res static canvas scaled down to logical width/height
+            ctx.drawImage(staticCanvas, 0, 0, width, height);
         }
     }
 
