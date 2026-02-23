@@ -9,11 +9,11 @@ class AIStrategy {
     constructor(difficulty) {
         this.difficulty = difficulty; // 'easy' | 'medium' | 'hard'
 
-        // Zorluğa göre tarama detayları
+        // Zorluğa göre tarama detayları (arttırılmış zorluk)
         this.scanConfig = {
-            easy: { angleStep: 15, powerLevels: [0.3, 0.6, 0.9] },
-            medium: { angleStep: 5, powerLevels: [0.2, 0.4, 0.6, 0.8, 1.0] },
-            hard: { angleStep: 2, powerLevels: [0.15, 0.25, 0.4, 0.55, 0.7, 0.8, 0.9, 1.0] }
+            easy: { angleStep: 10, powerLevels: [0.25, 0.5, 0.75, 1.0] },
+            medium: { angleStep: 3, powerLevels: [0.2, 0.35, 0.5, 0.65, 0.8, 1.0] },
+            hard: { angleStep: 1, powerLevels: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] }
         };
 
         // Puanlama ağırlıkları
@@ -23,11 +23,11 @@ class AIStrategy {
             hard: { goal: 1000, ownGoal: -2000, proximity: 200, safety: 120, position: 60 }
         };
 
-        // Hata oranları (Daha sonra Humanization fazında da kullanılabilir)
+        // Hata oranları (Daha sonra Humanization fazında da kullanılabilir - azaltılmış hata)
         this.errorConfig = {
-            easy: { angleError: 25, powerError: 0.25 },
-            medium: { angleError: 10, powerError: 0.12 },
-            hard: { angleError: 3, powerError: 0.05 }
+            easy: { angleError: 15, powerError: 0.15 },
+            medium: { angleError: 5, powerError: 0.08 },
+            hard: { angleError: 1, powerError: 0.02 }
         };
     }
 
@@ -139,26 +139,22 @@ class AIStrategy {
         let selected = null;
         switch (this.difficulty) {
             case 'easy':
-                if (Math.random() < 0.4) {
-                    const pool = sortedShots.slice(0, Math.max(1, Math.floor(sortedShots.length / 2)));
-                    selected = pool[Math.floor(Math.random() * pool.length)];
-                } else {
-                    selected = sortedShots[Math.floor(Math.random() * Math.min(5, sortedShots.length))];
-                }
-                break;
-            case 'medium':
                 if (Math.random() < 0.2) {
-                    selected = sortedShots[Math.floor(Math.random() * Math.min(5, sortedShots.length))];
+                    const pool = sortedShots.slice(0, Math.max(1, Math.floor(sortedShots.length / 3)));
+                    selected = pool[Math.floor(Math.random() * pool.length)];
                 } else {
                     selected = sortedShots[Math.floor(Math.random() * Math.min(3, sortedShots.length))];
                 }
                 break;
-            case 'hard':
-                if (Math.random() < 0.9) {
-                    selected = sortedShots[0];
+            case 'medium':
+                if (Math.random() < 0.1) {
+                    selected = sortedShots[Math.floor(Math.random() * Math.min(3, sortedShots.length))];
                 } else {
                     selected = sortedShots[Math.floor(Math.random() * Math.min(2, sortedShots.length))];
                 }
+                break;
+            case 'hard':
+                selected = sortedShots[0] || null;
                 break;
         }
 
