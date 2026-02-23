@@ -38,15 +38,26 @@ const AuthManager = (() => {
     /**
      * Register a new player via WebSocket
      */
-    function register(username) {
+    async function register(username) {
+        if (!NetworkManager.isConnected()) {
+            const connected = await NetworkManager.connect();
+            if (!connected) {
+                handleAuthError('Sunucuya bağlanılamadı. Lütfen tekrar deneyin.');
+                return;
+            }
+        }
         NetworkManager.send({ type: 'AUTH_REGISTER', username });
     }
 
     /**
      * Login with existing token via WebSocket
      */
-    function loginWithToken() {
+    async function loginWithToken() {
         if (!authToken) return false;
+        if (!NetworkManager.isConnected()) {
+            const connected = await NetworkManager.connect();
+            if (!connected) return false;
+        }
         NetworkManager.send({ type: 'AUTH_LOGIN', token: authToken });
         return true;
     }
