@@ -168,10 +168,6 @@ function handleMessage(ws, message) {
             (async () => {
                 try {
                     const result = await playerService.registerPlayer(message.username);
-                    if (!result) {
-                        ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Bu kullanıcı adı zaten alınmış' }));
-                        return;
-                    }
                     ws.playerUsername = result.player.username;
                     ws.send(JSON.stringify({
                         type: 'AUTH_SUCCESS',
@@ -180,8 +176,14 @@ function handleMessage(ws, message) {
                     }));
                     console.log(`[AUTH] Yeni kayıt: ${message.username}`);
                 } catch (err) {
-                    console.error('[AUTH] Kayıt hatası:', err.message);
-                    ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Kayıt sırasında hata oluştu' }));
+                    if (err.message === 'NO_DB_CONNECTION') {
+                        ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Sunucuya bağlanılamıyor (Veritabanı kapalı).' }));
+                    } else if (err.message === 'USERNAME_TAKEN') {
+                        ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Bu kullanıcı adı zaten alınmış.' }));
+                    } else {
+                        console.error('[AUTH] Kayıt hatası:', err.message);
+                        ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Kayıt sırasında bilinmeyen bir hata oluştu.' }));
+                    }
                 }
             })();
             break;
@@ -192,7 +194,7 @@ function handleMessage(ws, message) {
                 try {
                     const player = await playerService.loginByToken(message.token);
                     if (!player) {
-                        ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Geçersiz oturum. Lütfen yeniden kayıt olun.' }));
+                        ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Geçersiz veya süresi dolmuş oturum. Tekrar kayıt olun.' }));
                         return;
                     }
                     ws.playerUsername = player.username;
@@ -204,7 +206,7 @@ function handleMessage(ws, message) {
                     console.log(`[AUTH] Giriş: ${player.username}`);
                 } catch (err) {
                     console.error('[AUTH] Giriş hatası:', err.message);
-                    ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Giriş sırasında hata oluştu' }));
+                    ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Sunucuyla bağlantı kurulamadı.' }));
                 }
             })();
             break;

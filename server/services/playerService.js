@@ -12,12 +12,13 @@ const crypto = require('crypto');
  * Yeni oyuncu kaydı
  * @param {string} username
  * @returns {Object} { player, token }
+ * @throws {Error} if DB is not connected or username is taken
  */
 async function registerPlayer(username) {
-    if (!isDBConnected()) return null;
+    if (!isDBConnected()) throw new Error('NO_DB_CONNECTION');
 
     const existing = await Player.findOne({ username });
-    if (existing) return null; // username taken
+    if (existing) throw new Error('USERNAME_TAKEN');
 
     const token = crypto.randomUUID();
     const player = await Player.create({ username, token });
