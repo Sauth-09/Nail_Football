@@ -1039,6 +1039,8 @@ body {
     align-items: center;
     justify-content: center;
     width: 100%;
+    /* Ekranın %100'ünden üst bar boşluğunu ve payı çıkararak sığdırıyoruz */
+    max-height: calc(100vh - 120px);
     overflow: hidden;
     position: relative;
 }
@@ -1046,6 +1048,10 @@ body {
 #game-canvas {
     touch-action: none;
     image-rendering: auto;
+    /* Canvas'ın enboy oranını aşmasına engel olur */
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
 }
 
 /* ═══════════════════════════════════════════════ */

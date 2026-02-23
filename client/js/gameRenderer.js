@@ -205,7 +205,12 @@ const GameRenderer = (() => {
     function drawDirectionArrow(ctx, angle) {
         const bx = ballPosition.x * scaleX;
         const by = ballPosition.y * scaleY;
-        const arrowLength = 120;
+
+        let arrowLength = 120; // fallback
+        if (typeof UIManager !== 'undefined') {
+            const settings = UIManager.getSettings();
+            if (settings && settings.arrowLength) arrowLength = settings.arrowLength;
+        }
 
         const ex = bx + Math.cos(angle) * arrowLength;
         const ey = by + Math.sin(angle) * arrowLength;

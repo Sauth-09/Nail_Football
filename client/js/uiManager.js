@@ -287,6 +287,11 @@ const UIManager = (() => {
             settings.powerBarSpeed = parseFloat(settingPowerSpeed.value);
             saveSettings();
         });
+        const settingArrowLength = document.getElementById('setting-arrow-length');
+        if (settingArrowLength) settingArrowLength.addEventListener('change', () => {
+            settings.arrowLength = parseInt(settingArrowLength.value);
+            saveSettings();
+        });
         const settingFriction = document.getElementById('setting-friction');
         if (settingFriction) settingFriction.addEventListener('input', () => {
             settings.friction = parseFloat(settingFriction.value);
@@ -875,6 +880,7 @@ const UIManager = (() => {
             'setting-goal-limit': settings.goalLimit,
             'setting-power-speed': settings.powerBarSpeed,
             'setting-friction': settings.friction,
+            'setting-arrow-length': settings.arrowLength,
             'setting-theme': settings.theme,
             'setting-particles': settings.particles ? '1' : '0',
             'setting-volume': settings.volume,
