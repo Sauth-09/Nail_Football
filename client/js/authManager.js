@@ -38,7 +38,7 @@ const AuthManager = (() => {
     /**
      * Register a new player via WebSocket
      */
-    async function register(username) {
+    async function register(username, password) {
         if (!NetworkManager.isConnected()) {
             const connected = await NetworkManager.connect();
             if (!connected) {
@@ -46,7 +46,21 @@ const AuthManager = (() => {
                 return;
             }
         }
-        NetworkManager.send({ type: 'AUTH_REGISTER', username });
+        NetworkManager.send({ type: 'AUTH_REGISTER', username, password });
+    }
+
+    /**
+     * Login via WebSocket
+     */
+    async function login(username, password) {
+        if (!NetworkManager.isConnected()) {
+            const connected = await NetworkManager.connect();
+            if (!connected) {
+                handleAuthError('Sunucuya bağlanılamadı. Lütfen tekrar deneyin.');
+                return;
+            }
+        }
+        NetworkManager.send({ type: 'AUTH_LOGIN_PASSWORD', username, password });
     }
 
     /**
@@ -183,7 +197,7 @@ const AuthManager = (() => {
 
     return {
         init, hasToken, getToken, getPlayer, getUsername, isLoggedIn,
-        register, loginWithToken,
+        register, login, loginWithToken,
         handleAuthSuccess, handleAuthError,
         skipAuth, logout,
         updateProfileDisplay, loadRecentMatches

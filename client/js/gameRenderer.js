@@ -39,6 +39,9 @@ const GameRenderer = (() => {
     /** Player colors */
     const PLAYER_COLORS = { 1: '#2196F3', 2: '#F44336' };
 
+    let goalkeeperEnabled = true;
+    let goalkeeperShotStartTime = 0;
+
     let canvasWidth = 0, canvasHeight = 0;
 
     /**
@@ -140,6 +143,14 @@ const GameRenderer = (() => {
     }
 
     /**
+     * Updates goalkeeper configuration for rendering
+     */
+    function setGoalkeeperState(enabled, shotStartTime = 0) {
+        goalkeeperEnabled = enabled;
+        goalkeeperShotStartTime = shotStartTime;
+    }
+
+    /**
      * Gets canvas coordinates from field coordinates
      * @param {number} fieldX
      * @param {number} fieldY
@@ -182,6 +193,21 @@ const GameRenderer = (() => {
 
         // Layer 4: Nails
         FieldRenderer.drawNails(ctx, field, scaleX, scaleY);
+
+        // Layer 4.5: Goalkeepers
+        if (goalkeeperEnabled && typeof PhysicsClient !== 'undefined' && PhysicsClient.getGoalkeeperY) {
+            let t = Date.now();
+
+            const gkBaseY = field.fieldHeight / 2;
+            const gkLeftX = 70;
+            const gkRightX = field.fieldWidth - 70;
+            const gkWidth = 12;
+            const gkHeight = 40;
+
+            const currentY = PhysicsClient.getGoalkeeperY(t, field, gkBaseY);
+            drawGoalkeeper(ctx, gkLeftX, currentY, gkWidth, gkHeight, '#E0E0E0'); // Metallic silver
+            drawGoalkeeper(ctx, gkRightX, currentY, gkWidth, gkHeight, '#E0E0E0');
+        }
 
         // Layer 5a: Effects before ball (trail, glow)
         if (typeof EffectsManager !== 'undefined') {
@@ -265,6 +291,35 @@ const GameRenderer = (() => {
     }
 
     /**
+     * Draws a capsule-shaped goalkeeper
+     */
+    function drawGoalkeeper(ctx, x, y, w, h, color) {
+        ctx.save();
+        ctx.fillStyle = color;
+        // Draw capsule
+        ctx.beginPath();
+        const r = w / 2;
+        ctx.arc(x * scaleX, (y - h / 2 + r) * scaleY, r * Math.min(scaleX, scaleY), Math.PI, 0);
+        ctx.arc(x * scaleX, (y + h / 2 - r) * scaleY, r * Math.min(scaleX, scaleY), 0, Math.PI);
+        ctx.closePath();
+        ctx.fill();
+
+        // Add metallic gradient
+        const grad = ctx.createLinearGradient((x - r) * scaleX, 0, (x + r) * scaleX, 0);
+        grad.addColorStop(0, 'rgba(255,255,255,0.8)');
+        grad.addColorStop(0.5, 'rgba(0,0,0,0.1)');
+        grad.addColorStop(1, 'rgba(255,255,255,0.4)');
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    /**
      * Gets the canvas bounding rect
      * @returns {DOMRect}
      */
@@ -291,6 +346,7 @@ const GameRenderer = (() => {
         setField,
         setBallPosition,
         setDirectionArrow,
+        setGoalkeeperState,
         setCurrentPlayer: (p) => { currentPlayer = p; },
         fieldToCanvas,
         canvasToField,

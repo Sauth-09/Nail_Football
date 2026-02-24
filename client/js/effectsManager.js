@@ -389,6 +389,7 @@ const EffectsManager = (() => {
         if (!settings.hitSounds) {
             if (type === 'nail') SoundManager.playNailHit();
             else if (type === 'wall') SoundManager.playWallHit();
+            else if (type === 'goalkeeper') SoundManager.playWallHit(); // Fallback
             return;
         }
 
@@ -405,6 +406,15 @@ const EffectsManager = (() => {
             const baseFreq = 120 + n * 130;
             const volume = 0.12 + n * 0.18;
             SoundManager.playTone(baseFreq, baseFreq * 0.3, 0.06 + n * 0.08, 'sine', volume);
+        } else if (type === 'goalkeeper') {
+            // Metallic THUD sound
+            const baseFreq = 150 + n * 100;
+            const volume = 0.2 + n * 0.2;
+            SoundManager.playTone(baseFreq, baseFreq * 0.4, 0.08 + n * 0.1, 'square', volume);
+            if (n > 0.4) {
+                // Secondary metallic ring
+                SoundManager.playTone(800 + Math.random() * 200, 400, 0.05, 'sine', 0.05);
+            }
         }
     }
 

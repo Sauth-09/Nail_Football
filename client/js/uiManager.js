@@ -22,7 +22,8 @@ const UIManager = (() => {
         particles: true,
         volume: 70,
         sfx: true,
-        vibration: true
+        vibration: true,
+        goalkeeperEnabled: true
     };
 
     /** @type {Array} Available fields */
@@ -123,15 +124,32 @@ const UIManager = (() => {
 
         // Auth buttons
         const btnAuthRegister = document.getElementById('btn-auth-register');
+        const btnAuthLogin = document.getElementById('btn-auth-login');
         const btnAuthSkip = document.getElementById('btn-auth-skip');
         if (btnAuthRegister) btnAuthRegister.addEventListener('click', () => {
             const username = document.getElementById('auth-username')?.value?.trim();
+            const password = document.getElementById('auth-password')?.value?.trim();
             if (!username || username.length < 2) {
                 const err = document.getElementById('auth-error');
                 if (err) { err.textContent = 'Kullanıcı adı en az 2 karakter olmalı'; err.style.display = 'block'; }
                 return;
             }
-            AuthManager.register(username);
+            if (!password || password.length < 4) {
+                const err = document.getElementById('auth-error');
+                if (err) { err.textContent = 'Şifre en az 4 karakter olmalı'; err.style.display = 'block'; }
+                return;
+            }
+            AuthManager.register(username, password);
+        });
+        if (btnAuthLogin) btnAuthLogin.addEventListener('click', () => {
+            const username = document.getElementById('auth-username')?.value?.trim();
+            const password = document.getElementById('auth-password')?.value?.trim();
+            if (!username || !password) {
+                const err = document.getElementById('auth-error');
+                if (err) { err.textContent = 'Kullanıcı adı ve şifre gereklidir'; err.style.display = 'block'; }
+                return;
+            }
+            AuthManager.login(username, password);
         });
         if (btnAuthSkip) btnAuthSkip.addEventListener('click', () => {
             AuthManager.skipAuth();
@@ -442,6 +460,24 @@ const UIManager = (() => {
                 }
             });
         });
+
+        // Goalkeeper Toggle (Local/Host)
+        const gkToggle = document.getElementById('gk-toggle');
+        if (gkToggle) {
+            gkToggle.addEventListener('change', () => {
+                settings.goalkeeperEnabled = gkToggle.checked;
+                saveSettings();
+            });
+        }
+
+        // Challenge Goalkeeper Toggle
+        const challengeGkToggle = document.getElementById('challenge-gk-toggle');
+        if (challengeGkToggle) {
+            challengeGkToggle.addEventListener('change', () => {
+                settings.goalkeeperEnabled = challengeGkToggle.checked;
+                saveSettings();
+            });
+        }
     }
 
     /**
@@ -1034,6 +1070,12 @@ const UIManager = (() => {
             const el = document.getElementById(id);
             if (el && value !== undefined) el.value = value;
         }
+
+        const gkToggle = document.getElementById('gk-toggle');
+        if (gkToggle) gkToggle.checked = settings.goalkeeperEnabled;
+
+        const challengeGkToggle = document.getElementById('challenge-gk-toggle');
+        if (challengeGkToggle) challengeGkToggle.checked = settings.goalkeeperEnabled;
 
         const volumeLabel = document.getElementById('volume-label');
         if (volumeLabel) volumeLabel.textContent = `${settings.volume}%`;

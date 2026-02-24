@@ -16,12 +16,42 @@ class AISimulator {
     }
 
     /**
+     * Calculates the deterministic Y position of the goalkeeper based on time
+     */
+    getGoalkeeperY(t, startY) {
+        return startY + Math.sin(t * 0.003) * 50;
+    }
+
+    /**
+     * Checks collision between ball and a capsule-shaped goalkeeper
+     */
+    checkGoalkeeperCollision(ball, gk) {
+        const halfW = gk.width / 2;
+        const halfH = gk.height / 2;
+        let testX = ball.x;
+        let testY = ball.y;
+
+        if (ball.x < gk.x - halfW) testX = gk.x - halfW;
+        else if (ball.x > gk.x + halfW) testX = gk.x + halfW;
+
+        if (ball.y < gk.y - halfH) testY = gk.y - halfH;
+        else if (ball.y > gk.y + halfH) testY = gk.y + halfH;
+
+        const distX = ball.x - testX;
+        const distY = ball.y - testY;
+        const distance = Math.sqrt((distX * distX) + (distY * distY));
+
+        return distance <= ball.radius;
+    }
+
+    /**
      * @param {Object} ballPos Seçilen açıda topun başlangıç konumu {x, y}
      * @param {number} angle Radyan cinsinden açı
      * @param {number} power Atış gücü (0.0 - 1.0)
+     * @param {Object} [options] Opsiyonel { goalkeeperEnabled, shotStartTime }
      * @returns {Object} { finalPosition, isGoal, goalSide, nailHitCount, wallHitCount }
      */
-    simulate(ballPos, angle, power) {
+    simulate(ballPos, angle, power, options = {}) {
         const ball = {
             x: ballPos.x,
             y: ballPos.y,
@@ -38,6 +68,15 @@ class AISimulator {
         let nailHitCount = 0;
         let wallHitCount = 0;
         let frame = 0;
+
+        const gkWidth = 12;
+        const gkHeight = 40;
+        const gkBaseY = this.field.fieldHeight / 2;
+        const gkLeftX = 70;
+        const gkRightX = this.field.fieldWidth - 70;
+
+        const shotStartTime = options.shotStartTime || 0;
+        const isGkEnabled = options.goalkeeperEnabled === true;
 
         while (frame < this.MAX_FRAMES) {
             frame++;
@@ -113,6 +152,38 @@ class AISimulator {
                     const overlap = minDist - distance;
                     ball.x += nx * overlap;
                     ball.y += ny * overlap;
+                }
+            }
+
+            // Kaleci Çarpışmaları (Sessiz)
+            if (isGkEnabled) {
+                const currentTimeMs = shotStartTime + (frame * this.DT * 1000);
+                const currentY = this.getGoalkeeperY(currentTimeMs, gkBaseY);
+
+                const gkLeft = { x: gkLeftX, y: currentY, width: gkWidth, height: gkHeight };
+                const gkRight = { x: gkRightX, y: currentY, width: gkWidth, height: gkHeight };
+
+                const gks = [gkLeft, gkRight];
+                for (const gk of gks) {
+                    if (this.checkGoalkeeperCollision(ball, gk)) {
+                        const dx = ball.x - gk.x;
+                        const dy = ball.y - gk.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+
+                        const dvn = ball.vx * nx + ball.vy * ny;
+                        if (dvn < 0) {
+                            ball.vx -= (1 + this.field.wallRestitution) * dvn * nx;
+                            ball.vy -= (1 + this.field.wallRestitution) * dvn * ny;
+                        }
+
+                        const overlap = ball.radius - dist;
+                        if (overlap > 0) {
+                            ball.x += nx * overlap;
+                            ball.y += ny * overlap;
+                        }
+                    }
                 }
             }
 

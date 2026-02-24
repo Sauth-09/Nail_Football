@@ -200,6 +200,8 @@ class GameManager {
         const room = this.rooms.get(roomCode);
         if (!room || !room.fieldConfig) return null;
 
+        room.settings = settings || {};
+
         // Apply custom host settings to the room's simulation
         if (settings) {
             if (settings.friction) {
@@ -224,7 +226,8 @@ class GameManager {
                 ballPosition: { ...room.fieldConfig.ballStartPosition },
                 scores: [0, 0],
                 currentPlayer: 1
-            }
+            },
+            goalkeeperEnabled: room.settings.goalkeeperEnabled === true
         };
 
         this.broadcastToRoom(room, startData);
@@ -238,20 +241,27 @@ class GameManager {
      * @param {number} playerId - Shooting player ID
      * @param {number} angle - Shot angle in radians
      * @param {number} power - Shot power (0-1)
+     * @param {number} shotStartTime - Timestamp of shot
      * @returns {Object|null} Shot result
      */
-    processShot(roomCode, playerId, angle, power) {
+    processShot(roomCode, playerId, angle, power, shotStartTime) {
         const room = this.rooms.get(roomCode);
         if (!room || room.state !== 'playing') return null;
         if (room.gameState.currentPlayer !== playerId) return null;
         if (!validateShot(angle, power)) return null;
+
+        const options = {
+            goalkeeperEnabled: room.settings?.goalkeeperEnabled === true,
+            shotStartTime: shotStartTime || Date.now()
+        };
 
         // Run physics simulation on server
         const result = simulateShot(
             room.fieldConfig,
             angle,
             power,
-            room.gameState.ballPosition
+            room.gameState.ballPosition,
+            options
         );
 
         // Update game state

@@ -23,14 +23,58 @@ const PhysicsClient = (() => {
     const MIN_SPEED = 5;
 
     /**
+     * Calculates the deterministic Y position of the goalkeeper based on time
+     * @param {number} t - Time in milliseconds since shot started
+     * @param {Object} field - Field configuration
+     * @param {number} startY - Goalkeeper center Y (usually field height / 2)
+     * @returns {number} Current Y position
+     */
+    function getGoalkeeperY(t, field, startY) {
+        // Amplitude: 50, Speed multiplier: 0.003
+        return startY + Math.sin(t * 0.003) * 50;
+    }
+
+    /**
+     * Checks collision between ball and a capsule-shaped goalkeeper
+     * @param {Object} ball - Ball state
+     * @param {Object} gk - Goalkeeper state (x, y, width, height)
+     * @returns {boolean} True if collides
+     */
+    function checkGoalkeeperCollision(ball, gk) {
+        // Simple AABB-Circle collision approach
+        // Find closest point to the circle within the rectangle
+        const halfW = gk.width / 2;
+        const halfH = gk.height / 2;
+
+        let testX = ball.x;
+        let testY = ball.y;
+
+        // Which edge is closest?
+        if (ball.x < gk.x - halfW) testX = gk.x - halfW;      // test left edge
+        else if (ball.x > gk.x + halfW) testX = gk.x + halfW;   // right edge
+
+        if (ball.y < gk.y - halfH) testY = gk.y - halfH;      // top edge
+        else if (ball.y > gk.y + halfH) testY = gk.y + halfH;   // bottom edge
+
+        // Get distance from closest edges
+        const distX = ball.x - testX;
+        const distY = ball.y - testY;
+        const distance = Math.sqrt((distX * distX) + (distY * distY));
+
+        // If the distance is less than the radius, collision!
+        return distance <= ball.radius;
+    }
+
+    /**
      * Simulates a shot locally (for local mode)
      * @param {Object} field - Field configuration
      * @param {number} angle - Shot angle in radians
      * @param {number} power - Shot power (0-1)
      * @param {Object} ballPos - Ball start position {x, y}
+     * @param {Object} [options] - Optional settings (goalkeeperEnabled, shotStartTime)
      * @returns {Object} Result with trajectory and collision events
      */
-    function simulateShot(field, angle, power, ballPos) {
+    function simulateShot(field, angle, power, ballPos, options = {}) {
         const ball = {
             x: ballPos.x,
             y: ballPos.y,
@@ -46,6 +90,16 @@ const PhysicsClient = (() => {
         const collisionEvents = []; // {type, index, x, y, frame}
         let goalScored = null;
         let frame = 0;
+
+        const gkWidth = 12;
+        const gkHeight = 40;
+        const gkBaseY = field.fieldHeight / 2;
+        const gkLeftX = 70;
+        const gkRightX = field.fieldWidth - 70;
+
+        // shotStartTime defaults to 0 if not provided
+        const shotStartTime = options.shotStartTime || 0;
+        const isGkEnabled = options.goalkeeperEnabled === true;
 
         while (frame < MAX_FRAMES) {
             frame++;
@@ -120,6 +174,46 @@ const PhysicsClient = (() => {
                         x: nail.x, y: nail.y, frame,
                         speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
                     });
+                }
+            }
+
+            // Goalkeeper collisions
+            if (isGkEnabled) {
+                const currentTimeMs = shotStartTime + (frame * DT * 1000);
+                const currentY = getGoalkeeperY(currentTimeMs, field, gkBaseY);
+
+                const gkLeft = { x: gkLeftX, y: currentY, width: gkWidth, height: gkHeight };
+                const gkRight = { x: gkRightX, y: currentY, width: gkWidth, height: gkHeight };
+
+                const gks = [gkLeft, gkRight];
+                for (const gk of gks) {
+                    if (checkGoalkeeperCollision(ball, gk)) {
+                        // Reflect ball simply
+                        const dx = ball.x - gk.x;
+                        const dy = ball.y - gk.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+
+                        const dvn = ball.vx * nx + ball.vy * ny;
+                        if (dvn < 0) {
+                            ball.vx -= (1 + field.wallRestitution) * dvn * nx;
+                            ball.vy -= (1 + field.wallRestitution) * dvn * ny;
+                        }
+
+                        // Push out
+                        const overlap = ball.radius - dist; // simple approximation
+                        if (overlap > 0) {
+                            ball.x += nx * overlap;
+                            ball.y += ny * overlap;
+                        }
+
+                        collisionEvents.push({
+                            type: 'goalkeeper',
+                            x: gk.x, y: gk.y, frame,
+                            speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+                        });
+                    }
                 }
             }
 
@@ -232,6 +326,7 @@ const PhysicsClient = (() => {
         startPlayback,
         advancePlayback,
         isPlaying,
-        stopPlayback
+        stopPlayback,
+        getGoalkeeperY
     };
 })();

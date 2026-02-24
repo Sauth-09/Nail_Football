@@ -110,7 +110,17 @@
             <div id="field-gallery" class="field-gallery"></div>
             <button id="field-next" class="gallery-arrow right">›</button>
         </div>
-        <button id="btn-start-game" class="menu-btn primary start-btn">OYUNU BAŞLAT</button>
+        <div class="field-settings" style="margin-top: 20px; text-align: center;">
+            <div class="setting-row" style="justify-content: center; gap: 15px; margin-bottom: 5px;">
+                <label for="gk-toggle" style="font-weight: 600;">🥅 Hareketli Kaleci</label>
+                <label class="switch">
+                    <input type="checkbox" id="gk-toggle" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <p class="setting-desc" style="font-size: 0.85em; opacity: 0.8; margin: 0;">Kalenin önünde hareket eden bir engel ekler.</p>
+        </div>
+        <button id="btn-start-game" class="menu-btn primary start-btn" style="margin-top: 20px;">OYUNU BAŞLAT</button>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
@@ -440,12 +450,17 @@
         <div class="menu-container">
             <div class="menu-header">
                 <h1 class="game-title">👤 Giriş Yap</h1>
-                <p class="game-tagline">Turnuva ve skor tablosu için kullanıcı adı gerekli</p>
+                <p class="game-tagline">Turnuva, arkadaş ve skor tablosu için giriş gereklidir</p>
             </div>
             <div class="auth-form">
                 <input type="text" id="auth-username" class="text-input" placeholder="Kullanıcı adını yaz..." maxlength="20" minlength="2">
-                <button id="btn-auth-register" class="menu-btn primary">KAYIT OL / GİRİŞ YAP</button>
+                <input type="password" id="auth-password" class="text-input" placeholder="Şifrenizi yazın (en az 4 hane)..." minlength="4">
+                <div class="menu-row">
+                    <button id="btn-auth-login" class="menu-btn primary">GİRİŞ YAP</button>
+                    <button id="btn-auth-register" class="menu-btn secondary">KAYIT OL</button>
+                </div>
                 <p id="auth-error" class="auth-error" style="display:none"></p>
+                <br>
                 <button id="btn-auth-skip" class="menu-btn">Atla (Misafir)</button>
             </div>
         </div>
@@ -647,7 +662,17 @@
                     <button class="challenge-goal-btn" data-goal="10">10</button>
                 </div>
             </div>
-            <div class="modal-buttons">
+            <div class="form-group" style="margin-top: 15px; text-align: center;">
+                <div class="setting-row" style="justify-content: center; gap: 15px; margin-bottom: 5px;">
+                    <label for="challenge-gk-toggle" style="font-weight: 600;">🥅 Hareketli Kaleci</label>
+                    <label class="switch">
+                        <input type="checkbox" id="challenge-gk-toggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <p class="setting-desc" style="font-size: 0.8em; opacity: 0.8; margin: 0;">Kalenin önünde hareket eden bir engel ekler.</p>
+            </div>
+            <div class="modal-buttons" style="margin-top: 20px;">
                 <button id="btn-challenge-cancel" class="menu-btn">İPTAL</button>
                 <button id="btn-challenge-send" class="menu-btn primary">⚔️ GÖNDER</button>
             </div>

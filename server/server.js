@@ -208,8 +208,12 @@ function handleMessage(ws, message) {
         // ── Auth ──
         case 'AUTH_REGISTER': {
             (async () => {
+                if (!message.password || message.password.length < 4) {
+                    ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Şifre en az 4 karakter olmalıdır.' }));
+                    return;
+                }
                 try {
-                    const result = await playerService.registerPlayer(message.username);
+                    const result = await playerService.registerPlayer(message.username, message.password);
                     ws.playerUsername = result.player.username;
 
                     // Online tracker'a ekle
@@ -239,6 +243,46 @@ function handleMessage(ws, message) {
                         console.error('[AUTH] Kayıt hatası:', err.message);
                         ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Kayıt sırasında bilinmeyen bir hata oluştu.' }));
                     }
+                }
+            })();
+            break;
+        }
+
+        case 'AUTH_LOGIN_PASSWORD': {
+            (async () => {
+                if (!message.username || !message.password) {
+                    ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Kullanıcı adı ve şifre gereklidir.' }));
+                    return;
+                }
+                try {
+                    const result = await playerService.loginByPassword(message.username, message.password);
+                    if (!result) {
+                        ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Kullanıcı adı veya şifre hatalı.' }));
+                        return;
+                    }
+                    ws.playerUsername = result.player.username;
+
+                    // Online tracker'a ekle
+                    onlineTracker.setOnline(result.player.username, ws);
+
+                    ws.send(JSON.stringify({
+                        type: 'AUTH_SUCCESS',
+                        player: {
+                            username: result.player.username,
+                            rating: result.player.rating,
+                            stats: result.player.stats,
+                            memberCode: result.player.memberCode,
+                            createdAt: result.player.createdAt
+                        },
+                        token: result.token
+                    }));
+                    console.log(`[AUTH] Şifre ile giriş: ${result.player.username}`);
+
+                    // Arkadaşlara çevrimiçi bildir
+                    await broadcastStatusToFriends(result.player.username, 'online');
+                } catch (err) {
+                    console.error('[AUTH] Giriş hatası:', err.message);
+                    ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Giriş sırasında hata oluştu.' }));
                 }
             })();
             break;
@@ -596,7 +640,7 @@ function handleMessage(ws, message) {
             if (!roomCode) return;
             const playerId = gameManager.getPlayerId(roomCode, ws);
             if (playerId === null) return;
-            gameManager.processShot(roomCode, playerId, message.angle, message.power);
+            gameManager.processShot(roomCode, playerId, message.angle, message.power, message.shotStartTime);
             break;
         }
 

@@ -7,23 +7,46 @@
 const Player = require('../models/Player');
 const { isDBConnected } = require('../db');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 /**
  * Yeni oyuncu kaydı
  * @param {string} username
+ * @param {string} password
  * @returns {Object} { player, token }
  * @throws {Error} if DB is not connected or username is taken
  */
-async function registerPlayer(username) {
+async function registerPlayer(username, password) {
     if (!isDBConnected()) throw new Error('NO_DB_CONNECTION');
 
     const existing = await Player.findOne({ username });
     if (existing) throw new Error('USERNAME_TAKEN');
 
     const token = crypto.randomUUID();
-    const player = await Player.create({ username, token });
+    const passwordHash = await bcrypt.hash(password, 10);
+    const player = await Player.create({ username, passwordHash, token });
     console.log(`[PLAYER] Yeni oyuncu kaydı: ${username} #${player.memberCode}`);
     return { player, token };
+}
+
+/**
+ * Kullanıcı adı ve şifre ile giriş
+ * @param {string} username
+ * @param {string} password
+ * @returns {Object|null} player
+ */
+async function loginByPassword(username, password) {
+    if (!isDBConnected()) return null;
+
+    const player = await Player.findOne({ username });
+    if (!player || !player.passwordHash) return null;
+
+    const isMatch = await bcrypt.compare(password, player.passwordHash);
+    if (!isMatch) return null;
+
+    player.lastActive = new Date();
+    await player.save();
+    return { player, token: player.token };
 }
 
 /**
@@ -161,6 +184,7 @@ async function runMigrations() {
 
 module.exports = {
     registerPlayer,
+    loginByPassword,
     loginByToken,
     getPlayer,
     findByMemberCode,

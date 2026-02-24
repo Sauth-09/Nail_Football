@@ -193,9 +193,10 @@ const NetworkManager = (() => {
      * Sends a shot command
      * @param {number} angle
      * @param {number} power
+     * @param {number} shotStartTime
      */
-    function shoot(angle, power) {
-        send({ type: 'SHOOT', angle, power });
+    function shoot(angle, power, shotStartTime) {
+        send({ type: 'SHOOT', angle, power, shotStartTime });
     }
 
     /**

@@ -24,6 +24,44 @@ const MAX_SIMULATION_FRAMES = 600;
 const MIN_SPEED = 5;
 
 /**
+ * Calculates the deterministic Y position of the goalkeeper based on time
+ * @param {number} t - Time in milliseconds since shot started
+ * @param {Object} field - Field configuration
+ * @param {number} startY - Goalkeeper center Y (usually field height / 2)
+ * @returns {number} Current Y position
+ */
+function getGoalkeeperY(t, field, startY) {
+    // Amplitude: 50, Speed multiplier: 0.003
+    return startY + Math.sin(t * 0.003) * 50;
+}
+
+/**
+ * Checks collision between ball and a capsule-shaped goalkeeper
+ * @param {Object} ball - Ball state
+ * @param {Object} gk - Goalkeeper state (x, y, width, height)
+ * @returns {boolean} True if collides
+ */
+function checkGoalkeeperCollision(ball, gk) {
+    const halfW = gk.width / 2;
+    const halfH = gk.height / 2;
+
+    let testX = ball.x;
+    let testY = ball.y;
+
+    if (ball.x < gk.x - halfW) testX = gk.x - halfW;
+    else if (ball.x > gk.x + halfW) testX = gk.x + halfW;
+
+    if (ball.y < gk.y - halfH) testY = gk.y - halfH;
+    else if (ball.y > gk.y + halfH) testY = gk.y + halfH;
+
+    const distX = ball.x - testX;
+    const distY = ball.y - testY;
+    const distance = Math.sqrt((distX * distX) + (distY * distY));
+
+    return distance <= ball.radius;
+}
+
+/**
  * Physics simulation state
  * @typedef {Object} BallState
  * @property {number} x - Ball X position
@@ -39,9 +77,10 @@ const MIN_SPEED = 5;
  * @param {number} angle - Shot angle in radians
  * @param {number} power - Shot power (0-1)
  * @param {Object} [startPos] - Optional start position override
+ * @param {Object} [options] - Optional settings (goalkeeperEnabled, shotStartTime)
  * @returns {Object} Simulation result with trajectory and final state
  */
-function simulateShot(fieldConfig, angle, power, startPos = null) {
+function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) {
     const {
         fieldWidth, fieldHeight, goalWidth, goalDepth,
         friction, wallRestitution, nailRestitution,
@@ -70,6 +109,15 @@ function simulateShot(fieldConfig, angle, power, startPos = null) {
 
     // Record initial position
     trajectory.push({ x: ball.x, y: ball.y, t: 0 });
+
+    const gkWidth = 12;
+    const gkHeight = 40;
+    const gkBaseY = fieldHeight / 2;
+    const gkLeftX = 70;
+    const gkRightX = fieldWidth - 70;
+
+    const shotStartTime = options.shotStartTime || 0;
+    const isGkEnabled = options.goalkeeperEnabled === true;
 
     // Simulation loop
     while (frame < MAX_SIMULATION_FRAMES) {
@@ -154,6 +202,38 @@ function simulateShot(fieldConfig, angle, power, startPos = null) {
             }
         }
 
+        // Step 4.5: Goalkeeper collision detection
+        if (isGkEnabled) {
+            const currentTimeMs = shotStartTime + (frame * PHYSICS_DT * 1000);
+            const currentY = getGoalkeeperY(currentTimeMs, fieldConfig, gkBaseY);
+
+            const gkLeft = { x: gkLeftX, y: currentY, width: gkWidth, height: gkHeight };
+            const gkRight = { x: gkRightX, y: currentY, width: gkWidth, height: gkHeight };
+
+            const gks = [gkLeft, gkRight];
+            for (const gk of gks) {
+                if (checkGoalkeeperCollision(ball, gk)) {
+                    const dx = ball.x - gk.x;
+                    const dy = ball.y - gk.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+
+                    const dvn = ball.vx * nx + ball.vy * ny;
+                    if (dvn < 0) {
+                        ball.vx -= (1 + wallRestitution) * dvn * nx;
+                        ball.vy -= (1 + wallRestitution) * dvn * ny;
+                    }
+
+                    const overlap = ball.radius - dist;
+                    if (overlap > 0) {
+                        ball.x += nx * overlap;
+                        ball.y += ny * overlap;
+                    }
+                }
+            }
+        }
+
         // Step 5: Apply friction
         ball.vx *= friction;
         ball.vy *= friction;
@@ -199,4 +279,4 @@ function validateShot(angle, power) {
     return true;
 }
 
-module.exports = { simulateShot, validateShot, PHYSICS_DT, MAX_SIMULATION_FRAMES, MIN_SPEED };
+module.exports = { simulateShot, validateShot, PHYSICS_DT, MAX_SIMULATION_FRAMES, MIN_SPEED, getGoalkeeperY };

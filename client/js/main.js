@@ -429,18 +429,34 @@ const Game = (() => {
         // Play kick sound
         SoundManager.playKick(power);
 
+        const shotStartTime = Date.now();
+        const settings = UIManager.getSettings();
+
         if (gameMode === 'local' || gameMode === 'vs_ai') {
             // Apply friction setting override
-            const settings = UIManager.getSettings();
             if (settings.friction) currentField.friction = settings.friction;
+
+            const options = {
+                goalkeeperEnabled: settings.goalkeeperEnabled,
+                shotStartTime: shotStartTime
+            };
+
+            // Inform renderer
+            GameRenderer.setGoalkeeperState(options.goalkeeperEnabled, shotStartTime);
+
             // Simulate locally
-            const result = PhysicsClient.simulateShot(currentField, angle, power, ballPos);
+            const result = PhysicsClient.simulateShot(currentField, angle, power, ballPos, options);
 
             // Start playback
             PhysicsClient.startPlayback(result, handleCollisionEvent, handleShotComplete);
         } else {
+            // Inform renderer (optimistically, though GAME_START already set it, this is safe)
+            // Wait, we use room setting for multiplayer. We'll rely on what we store locally?
+            // Actually, for multiplayer, goalkeeper setting should be set at GAME_START.
+            // But we can just use UIManager.getSettings().goalkeeperEnabled assuming it's synced.
+
             // Send to server
-            NetworkManager.shoot(angle, power);
+            NetworkManager.shoot(angle, power, shotStartTime);
         }
     }
 
@@ -469,6 +485,15 @@ const Game = (() => {
             const settings = UIManager.getSettings();
             if (settings.particles) {
                 AnimationManager.spawnParticles(event.x, event.y, '#8892b0', 2, 1.5, 10);
+            }
+        } else if (event.type === 'goalkeeper') {
+            EffectsManager.playHitSound('goalkeeper', speed);
+            EffectsManager.triggerSparks(event.x, event.y, speed * 1.5);
+            EffectsManager.triggerShake(speed * 0.8);
+
+            const settings = UIManager.getSettings();
+            if (settings.particles) {
+                AnimationManager.spawnParticles(event.x, event.y, '#E0E0E0', 4, 2.5, 12);
             }
         }
     }
@@ -826,6 +851,13 @@ const Game = (() => {
                     const mpSettings = UIManager.getSettings();
                     matchTimer = mpSettings.matchTime || 0;
                     lastTimerTick = Date.now();
+
+                    // Update UI settings based on room config if provided
+                    if (data.goalkeeperEnabled !== undefined) {
+                        GameRenderer.setGoalkeeperState(data.goalkeeperEnabled, 0);
+                        // Save to local UI so that if user checks settings, it matches
+                        mpSettings.goalkeeperEnabled = data.goalkeeperEnabled;
+                    }
 
                     // IMPORTANT: Show game screen FIRST so container has dimensions
                     UIManager.showScreen('game-screen');

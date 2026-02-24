@@ -36,6 +36,10 @@ const playerSchema = new mongoose.Schema({
         minlength: 2,
         maxlength: 20
     },
+    passwordHash: {
+        type: String,
+        // Not required to allow backward compatibility with older accounts
+    },
     token: {
         type: String,
         unique: true,
