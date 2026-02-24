@@ -1,80 +1,59 @@
 // WebSocket connection to the manager
 const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-const ws = new WebSocket(`${wsProtocol}//${location.host}/admin/manager-ws`);
+let ws;
+let pingInterval;
 
-// DOM Elements
-const statusDot = document.getElementById('status-dot');
-const statusText = document.getElementById('status-text');
-const btnStart = document.getElementById('btn-start');
-const btnStop = document.getElementById('btn-stop');
-const btnRestart = document.getElementById('btn-restart');
-const btnKillManager = document.getElementById('btn-kill-manager');
-const valPlayers = document.getElementById('val-players');
-const valRooms = document.getElementById('val-rooms');
-const valFirewall = document.getElementById('val-firewall');
-const btnFixFirewall = document.getElementById('btn-fix-firewall');
-const networkUrl = document.getElementById('network-url');
-const btnCopyUrl = document.getElementById('btn-copy-url');
-const qrCode = document.getElementById('qr-code');
-const terminalOutput = document.getElementById('terminal-output');
-const btnClearLogs = document.getElementById('btn-clear-logs');
-const settingAutostart = document.getElementById('setting-autostart');
-const btnCheckUpdate = document.getElementById('btn-check-update');
-const updateStatus = document.getElementById('update-status');
-const overlay = document.getElementById('overlay');
+function connectWebSocket() {
+    ws = new WebSocket(`${wsProtocol}//${location.host}/admin/manager-ws`);
 
-// User Management DOM
-const usersTableBody = document.getElementById('users-table-body');
-const totalUsersCount = document.getElementById('total-users-count');
-const btnAddUser = document.getElementById('btn-add-user');
-const inputNewUsername = document.getElementById('new-username');
-const inputNewPassword = document.getElementById('new-password');
-const btnPrevPage = document.getElementById('btn-prev-page');
-const btnNextPage = document.getElementById('btn-next-page');
-const pageInfo = document.getElementById('page-info');
+    ws.onopen = () => {
+        console.log('Manager WS Connected');
+        overlay.classList.add('hidden'); // Hide connecting/lost connection overlay
 
-let currentPage = 1;
+        // Start heartbeat
+        if (pingInterval) clearInterval(pingInterval);
+        pingInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 1000); // 1-second ping to keep manager alive
 
-// ═══════════════════════════════════════════
-// WebSocket & Heartbeat
-// ═══════════════════════════════════════════
+        // Load initial data for current tab
+        if (currentPage === 1) loadUsers(1);
+    };
 
-ws.onopen = () => {
-    console.log('Manager WS Connected');
-    // Start heartbeat
-    setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'ping' }));
+    ws.onclose = () => {
+        console.log('Manager WS Disconnected. Attempting to reconnect...');
+        overlay.classList.remove('hidden'); // Show lost connection overlay
+        if (pingInterval) clearInterval(pingInterval);
+
+        // Try to reconnect every 3 seconds
+        setTimeout(connectWebSocket, 3000);
+    };
+
+    ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === 'state') {
+            updateUI(msg.data);
+        } else if (msg.type === 'log') {
+            appendLog(msg.text, msg.level);
+        } else if (msg.type === 'updateStatus') {
+            updateStatus.innerHTML = msg.text.replace(/\n/g, '<br>');
+        } else if (msg.type === 'usersData') {
+            renderUsers(msg);
+        } else if (msg.type === 'adminActionSuccess') {
+            alert('Başarılı: ' + msg.message);
+            inputNewUsername.value = '';
+            inputNewPassword.value = '';
+        } else if (msg.type === 'adminActionError') {
+            alert('Hata: ' + msg.message);
         }
-    }, 1000); // 1-second ping to keep manager alive
-};
-
-ws.onclose = () => {
-    overlay.classList.remove('hidden'); // Show lost connection overlay
-};
-
-ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-
-    if (msg.type === 'state') {
-        updateUI(msg.data);
-    } else if (msg.type === 'log') {
-        appendLog(msg.text, msg.level);
-    } else if (msg.type === 'updateStatus') {
-        updateStatus.innerHTML = msg.text.replace(/\n/g, '<br>');
-    } else if (msg.type === 'usersData') {
-        renderUsers(msg);
-    } else if (msg.type === 'adminActionSuccess') {
-        alert('Başarılı: ' + msg.message);
-        inputNewUsername.value = '';
-        inputNewPassword.value = '';
-    } else if (msg.type === 'adminActionError') {
-        alert('Hata: ' + msg.message);
-    }
-};
+    };
+} // End of connectWebSocket()
 
 function sendCmd(cmd, payload = {}) {
-    if (ws.readyState === WebSocket.OPEN) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'cmd', cmd, ...payload }));
     }
 }
@@ -277,3 +256,6 @@ btnAddUser.addEventListener('click', () => {
 
 btnPrevPage.addEventListener('click', () => loadUsers(currentPage - 1));
 btnNextPage.addEventListener('click', () => loadUsers(currentPage + 1));
+
+// Initiate connection on load
+connectWebSocket();

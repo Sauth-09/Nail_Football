@@ -219,6 +219,10 @@ wss.on('connection', (ws, req) => {
         }
 
         ws.isAdmin = true;
+        ws.isAlive = true; // Heartbeat tracking
+
+        ws.on('pong', () => { ws.isAlive = true; });
+
         console.log(`[INFO] Admin Paneli bağlandı: ${clientIp}`);
 
         // Initial state
@@ -237,7 +241,10 @@ wss.on('connection', (ws, req) => {
         ws.on('message', (message) => {
             try {
                 const data = JSON.parse(message);
-                if (data.type === 'ping') return;
+                if (data.type === 'ping') {
+                    ws.isAlive = true;
+                    return;
+                }
 
                 if (data.type === 'cmd') {
                     // Admin commands processor
