@@ -3,6 +3,36 @@ const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
 let ws;
 let pingInterval;
 
+// DOM Elements
+const overlay = document.getElementById('overlay');
+const updateStatus = document.getElementById('update-status');
+const statusDot = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
+const btnStart = document.getElementById('btn-start');
+const btnStop = document.getElementById('btn-stop');
+const btnRestart = document.getElementById('btn-restart');
+const valPlayers = document.getElementById('val-players');
+const valRooms = document.getElementById('val-rooms');
+const networkUrl = document.getElementById('network-url');
+const qrCode = document.getElementById('qr-code');
+const valFirewall = document.getElementById('val-firewall');
+const btnFixFirewall = document.getElementById('btn-fix-firewall');
+const settingAutostart = document.getElementById('setting-autostart');
+const terminalOutput = document.getElementById('terminal-output');
+const btnKillManager = document.getElementById('btn-kill-manager');
+const btnCopyUrl = document.getElementById('btn-copy-url');
+const btnClearLogs = document.getElementById('btn-clear-logs');
+const btnCheckUpdate = document.getElementById('btn-check-update');
+const usersTableBody = document.getElementById('users-table-body');
+const totalUsersCount = document.getElementById('total-users-count');
+const pageInfo = document.getElementById('page-info');
+const btnPrevPage = document.getElementById('btn-prev-page');
+const btnNextPage = document.getElementById('btn-next-page');
+const btnAddUser = document.getElementById('btn-add-user');
+const inputNewUsername = document.getElementById('new-username');
+const inputNewPassword = document.getElementById('new-password');
+let currentPage = 1;
+
 function connectWebSocket() {
     ws = new WebSocket(`${wsProtocol}//${location.host}/admin/manager-ws`);
 
