@@ -157,6 +157,16 @@ const UIManager = (() => {
             showScreen('main-menu');
         });
 
+        // Logout button in profile
+        const btnProfileLogout = document.getElementById('btn-profile-logout');
+        if (btnProfileLogout) btnProfileLogout.addEventListener('click', () => {
+            SoundManager.playClick();
+            if (confirm('Oturumu kapatmak istediğinize emin misiniz?')) {
+                AuthManager.logout();
+                showScreen('auth-screen');
+            }
+        });
+
         // Back buttons
         document.querySelectorAll('.back-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {

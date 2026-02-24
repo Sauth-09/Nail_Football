@@ -51,14 +51,17 @@
                     <span class="btn-icon">🤖</span>
                     <span class="btn-text">BİLGİSAYARA KARŞI</span>
                 </button>
-                <button id="btn-local" class="menu-btn secondary">
-                    <span class="btn-icon">🏠</span>
-                    <span class="btn-text">AYNI EKRANDA OYNA</span>
-                </button>
-                <button id="btn-multiplayer" class="menu-btn secondary">
-                    <span class="btn-icon">🌐</span>
-                    <span class="btn-text">AĞ ÜZERİNDE OYNA</span>
-                </button>
+                <div class="menu-section-title" style="color: #8892b0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; text-align: center; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">👥 2 Kişilik Oyun</div>
+                <div class="menu-row">
+                    <button id="btn-local" class="menu-btn secondary">
+                        <span class="btn-icon">🏠</span>
+                        <span class="btn-text" style="font-size: 0.8em">AYNI EKRAN</span>
+                    </button>
+                    <button id="btn-multiplayer" class="menu-btn secondary">
+                        <span class="btn-icon">🌐</span>
+                        <span class="btn-text" style="font-size: 0.8em">ONLİNE</span>
+                    </button>
+                </div>
                 <button id="btn-friends" class="menu-btn secondary">
                     <span class="btn-icon">👥</span>
                     <span class="btn-text">ARKADAŞLAR</span>
@@ -546,6 +549,9 @@
             <h4>Son Maçlar</h4>
             <div id="profile-recent-matches" class="profile-recent-matches">
                 <p class="muted">Henüz maç yok</p>
+            </div>
+            <div style="margin-top:20px; text-align:center;">
+                <button id="btn-profile-logout" class="menu-btn" style="background:var(--color-red, #ff4757);color:white;width:100%;">OTURUMU KAPAT</button>
             </div>
         </div>
     </div>
