@@ -27,6 +27,10 @@ const playerService = require('./services/playerService');
 const matchService = require('./services/matchService');
 const leaderboardService = require('./services/leaderboardService');
 const tournamentService = require('./services/tournamentService');
+const onlineTracker = require('./services/onlineTracker');
+const friendService = require('./services/friendService');
+const ChallengeManager = require('./services/challengeManager');
+const Player = require('./models/Player');
 
 // ═══════════════════════════════════════════════════
 // Sunucu Yapılandırması
@@ -39,6 +43,7 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 const gameManager = new GameManager();
+const challengeManager = new ChallengeManager(onlineTracker);
 
 // ═══════════════════════════════════════════════════
 // Statik Dosya Servisi
@@ -121,6 +126,30 @@ app.get('/api/tournament/:id', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
+// Çevrimiçi Durum Broadcast
+// ═══════════════════════════════════════════════════
+
+/**
+ * Oyuncunun durumu değiştiğinde arkadaşlarına bildir
+ */
+async function broadcastStatusToFriends(username, status) {
+    try {
+        const player = await Player.findOne({ username }).select('friends');
+        if (!player) return;
+
+        for (const friend of player.friends) {
+            onlineTracker.sendTo(friend.username, {
+                type: 'FRIEND_STATUS_CHANGED',
+                username: username,
+                status: status
+            });
+        }
+    } catch (err) {
+        console.error('[STATUS] Durum broadcast hatası:', err.message);
+    }
+}
+
+// ═══════════════════════════════════════════════════
 // WebSocket Bağlantı Yönetimi
 // ═══════════════════════════════════════════════════
 
@@ -144,8 +173,21 @@ wss.on('connection', (ws, req) => {
         handleMessage(ws, message);
     });
 
-    ws.on('close', () => {
+    ws.on('close', async () => {
         console.log(`[INFO] Bağlantı kapandı: ${clientIp}`);
+
+        // Online tracker'dan çıkar ve arkadaşlara bildir
+        const username = onlineTracker.handleDisconnect(ws);
+        if (username) {
+            await broadcastStatusToFriends(username, 'offline');
+            // ChallengeManager'dan temizlik
+            challengeManager.handleDisconnect(username);
+            // DB'de lastActive güncelle
+            try {
+                await Player.updateOne({ username }, { lastActive: new Date() });
+            } catch (err) { /* silent */ }
+        }
+
         gameManager.handleDisconnect(ws);
     });
 
@@ -169,12 +211,25 @@ function handleMessage(ws, message) {
                 try {
                     const result = await playerService.registerPlayer(message.username);
                     ws.playerUsername = result.player.username;
+
+                    // Online tracker'a ekle
+                    onlineTracker.setOnline(result.player.username, ws);
+
                     ws.send(JSON.stringify({
                         type: 'AUTH_SUCCESS',
-                        player: { username: result.player.username, rating: result.player.rating, stats: result.player.stats },
+                        player: {
+                            username: result.player.username,
+                            rating: result.player.rating,
+                            stats: result.player.stats,
+                            memberCode: result.player.memberCode,
+                            createdAt: result.player.createdAt
+                        },
                         token: result.token
                     }));
-                    console.log(`[AUTH] Yeni kayıt: ${message.username}`);
+                    console.log(`[AUTH] Yeni kayıt: ${message.username} #${result.player.memberCode}`);
+
+                    // Arkadaşlara çevrimiçi bildir
+                    await broadcastStatusToFriends(result.player.username, 'online');
                 } catch (err) {
                     if (err.message === 'NO_DB_CONNECTION') {
                         ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Sunucuya bağlanılamıyor (Veritabanı kapalı).' }));
@@ -198,12 +253,25 @@ function handleMessage(ws, message) {
                         return;
                     }
                     ws.playerUsername = player.username;
+
+                    // Online tracker'a ekle
+                    onlineTracker.setOnline(player.username, ws);
+
                     ws.send(JSON.stringify({
                         type: 'AUTH_SUCCESS',
-                        player: { username: player.username, rating: player.rating, stats: player.stats },
+                        player: {
+                            username: player.username,
+                            rating: player.rating,
+                            stats: player.stats,
+                            memberCode: player.memberCode,
+                            createdAt: player.createdAt
+                        },
                         token: message.token
                     }));
-                    console.log(`[AUTH] Giriş: ${player.username}`);
+                    console.log(`[AUTH] Giriş: ${player.username} #${player.memberCode}`);
+
+                    // Arkadaşlara çevrimiçi bildir
+                    await broadcastStatusToFriends(player.username, 'online');
                 } catch (err) {
                     console.error('[AUTH] Giriş hatası:', err.message);
                     ws.send(JSON.stringify({ type: 'AUTH_ERROR', message: 'Sunucuyla bağlantı kurulamadı.' }));
@@ -212,38 +280,314 @@ function handleMessage(ws, message) {
             break;
         }
 
+        // ── Friend System ──
+        case 'FRIEND_SEARCH': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) {
+                        ws.send(JSON.stringify({ type: 'FRIEND_SEARCH_RESULT', error: 'Giriş yapmalısın' }));
+                        return;
+                    }
+                    const result = await friendService.searchByMemberCode(message.memberCode, ws.playerUsername);
+                    ws.send(JSON.stringify({ type: 'FRIEND_SEARCH_RESULT', ...result }));
+                } catch (err) {
+                    console.error('[FRIEND] Arama hatası:', err.message);
+                    ws.send(JSON.stringify({ type: 'FRIEND_SEARCH_RESULT', error: 'Arama yapılamadı' }));
+                }
+            })();
+            break;
+        }
+
+        case 'FRIEND_SEND_REQUEST': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) return;
+                    const result = await friendService.sendFriendRequest(ws.playerUsername, message.targetMemberCode);
+                    if (result.error) {
+                        ws.send(JSON.stringify({ type: 'FRIEND_ERROR', message: result.error }));
+                    } else if (result.accepted) {
+                        // Otomatik kabul edildi (karşı tarafın isteği vardı)
+                        ws.send(JSON.stringify({
+                            type: 'FRIEND_REQUEST_ACCEPTED',
+                            username: result.friend.username,
+                            memberCode: result.friend.memberCode,
+                            rating: result.friend.rating
+                        }));
+                        // Karşı tarafa da bildir
+                        onlineTracker.sendTo(result.friend.username, {
+                            type: 'FRIEND_REQUEST_ACCEPTED',
+                            username: result.acceptedBy.username,
+                            memberCode: result.acceptedBy.memberCode,
+                            rating: result.acceptedBy.rating
+                        });
+                    } else {
+                        ws.send(JSON.stringify({
+                            type: 'FRIEND_REQUEST_SENT',
+                            to: result.to,
+                            memberCode: result.toMemberCode
+                        }));
+                        // Karşı tarafa anlık bildirim
+                        onlineTracker.sendTo(result.to, {
+                            type: 'FRIEND_REQUEST_RECEIVED',
+                            from: ws.playerUsername,
+                            memberCode: result.fromMemberCode,
+                            rating: result.fromRating
+                        });
+                    }
+                } catch (err) {
+                    console.error('[FRIEND] İstek gönderme hatası:', err.message);
+                    ws.send(JSON.stringify({ type: 'FRIEND_ERROR', message: 'İstek gönderilemedi' }));
+                }
+            })();
+            break;
+        }
+
+        case 'FRIEND_ACCEPT_REQUEST': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) return;
+                    const result = await friendService.acceptFriendRequest(ws.playerUsername, message.fromUsername);
+                    if (result.error) {
+                        ws.send(JSON.stringify({ type: 'FRIEND_ERROR', message: result.error }));
+                    } else {
+                        ws.send(JSON.stringify({
+                            type: 'FRIEND_REQUEST_ACCEPTED',
+                            username: result.friend.username,
+                            memberCode: result.friend.memberCode,
+                            rating: result.friend.rating
+                        }));
+                        // Gönderene bildir
+                        onlineTracker.sendTo(result.friend.username, {
+                            type: 'FRIEND_REQUEST_ACCEPTED',
+                            username: result.acceptedBy.username,
+                            memberCode: result.acceptedBy.memberCode,
+                            rating: result.acceptedBy.rating
+                        });
+                    }
+                } catch (err) {
+                    console.error('[FRIEND] Kabul hatası:', err.message);
+                    ws.send(JSON.stringify({ type: 'FRIEND_ERROR', message: 'İstek kabul edilemedi' }));
+                }
+            })();
+            break;
+        }
+
+        case 'FRIEND_DECLINE_REQUEST': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) return;
+                    await friendService.declineFriendRequest(ws.playerUsername, message.fromUsername);
+                    ws.send(JSON.stringify({ type: 'FRIEND_REQUEST_DECLINED', fromUsername: message.fromUsername }));
+                } catch (err) {
+                    console.error('[FRIEND] Red hatası:', err.message);
+                }
+            })();
+            break;
+        }
+
+        case 'FRIEND_REMOVE': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) return;
+                    const result = await friendService.removeFriend(ws.playerUsername, message.friendUsername);
+                    if (result.error) {
+                        ws.send(JSON.stringify({ type: 'FRIEND_ERROR', message: result.error }));
+                    } else {
+                        ws.send(JSON.stringify({ type: 'FRIEND_REMOVED', username: message.friendUsername }));
+                    }
+                } catch (err) {
+                    console.error('[FRIEND] Silme hatası:', err.message);
+                }
+            })();
+            break;
+        }
+
+        case 'FRIEND_BLOCK': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) return;
+                    const result = await friendService.blockPlayer(ws.playerUsername, message.username);
+                    if (result.error) {
+                        ws.send(JSON.stringify({ type: 'FRIEND_ERROR', message: result.error }));
+                    } else {
+                        ws.send(JSON.stringify({ type: 'FRIEND_BLOCKED', username: message.username }));
+                    }
+                } catch (err) {
+                    console.error('[FRIEND] Engelleme hatası:', err.message);
+                }
+            })();
+            break;
+        }
+
+        case 'FRIEND_UNBLOCK': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) return;
+                    const result = await friendService.unblockPlayer(ws.playerUsername, message.username);
+                    if (result.error) {
+                        ws.send(JSON.stringify({ type: 'FRIEND_ERROR', message: result.error }));
+                    } else {
+                        ws.send(JSON.stringify({ type: 'FRIEND_UNBLOCKED', username: message.username }));
+                    }
+                } catch (err) {
+                    console.error('[FRIEND] Engel kaldırma hatası:', err.message);
+                }
+            })();
+            break;
+        }
+
+        case 'FRIEND_GET_LIST': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) return;
+                    const friends = await friendService.getFriendsList(ws.playerUsername);
+                    const enriched = onlineTracker.getOnlineFriends(friends);
+
+                    // Her arkadaşın rating bilgisini de ekle
+                    const friendsWithRating = await Promise.all(enriched.map(async (f) => {
+                        const player = await Player.findOne({ username: f.username }).select('rating');
+                        return { ...f, rating: player ? player.rating : 0 };
+                    }));
+
+                    ws.send(JSON.stringify({ type: 'FRIEND_LIST', friends: friendsWithRating }));
+                } catch (err) {
+                    console.error('[FRIEND] Liste hatası:', err.message);
+                    ws.send(JSON.stringify({ type: 'FRIEND_LIST', friends: [] }));
+                }
+            })();
+            break;
+        }
+
+        case 'FRIEND_GET_PENDING': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) return;
+                    const pending = await friendService.getPendingRequests(ws.playerUsername);
+                    ws.send(JSON.stringify({ type: 'FRIEND_PENDING_LIST', ...pending }));
+                } catch (err) {
+                    console.error('[FRIEND] Bekleyen istekler hatası:', err.message);
+                    ws.send(JSON.stringify({ type: 'FRIEND_PENDING_LIST', incoming: [], outgoing: [] }));
+                }
+            })();
+            break;
+        }
+
+        // ── Game Challenge (Meydan Okuma) ──
+        case 'GAME_CHALLENGE': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) return;
+                    const result = await challengeManager.createChallenge(
+                        ws.playerUsername,
+                        message.targetUsername,
+                        message.fieldId,
+                        message.goalLimit,
+                        Player
+                    );
+                    if (result.error) {
+                        ws.send(JSON.stringify({ type: 'GAME_CHALLENGE_ERROR', message: result.error }));
+                    } else {
+                        ws.send(JSON.stringify({
+                            type: 'GAME_CHALLENGE_SENT',
+                            challengeId: result.challengeId,
+                            to: result.to,
+                            toMemberCode: result.toMemberCode,
+                            toRating: result.toRating,
+                            fieldId: result.fieldId,
+                            goalLimit: result.goalLimit,
+                            expiresIn: result.expiresIn
+                        }));
+                    }
+                } catch (err) {
+                    console.error('[CHALLENGE] Oluşturma hatası:', err.message);
+                    ws.send(JSON.stringify({ type: 'GAME_CHALLENGE_ERROR', message: 'Davet gönderilemedi' }));
+                }
+            })();
+            break;
+        }
+
+        case 'GAME_ACCEPT_CHALLENGE': {
+            (async () => {
+                try {
+                    if (!ws.playerUsername) return;
+                    const result = await challengeManager.acceptChallenge(
+                        message.challengeId,
+                        ws.playerUsername,
+                        Player
+                    );
+                    if (result.error) {
+                        ws.send(JSON.stringify({ type: 'GAME_CHALLENGE_ERROR', message: result.error }));
+                    }
+                    // Kabul edildiyse challengeManager zaten her iki tarafa bildirim gönderdi
+                } catch (err) {
+                    console.error('[CHALLENGE] Kabul hatası:', err.message);
+                    ws.send(JSON.stringify({ type: 'GAME_CHALLENGE_ERROR', message: 'Kabul edilemedi' }));
+                }
+            })();
+            break;
+        }
+
+        case 'GAME_DECLINE_CHALLENGE': {
+            if (!ws.playerUsername) break;
+            challengeManager.declineChallenge(message.challengeId, ws.playerUsername);
+            break;
+        }
+
+        case 'GAME_CANCEL_CHALLENGE': {
+            if (!ws.playerUsername) break;
+            challengeManager.cancelChallenge(message.challengeId, ws.playerUsername);
+            break;
+        }
+
         // ── Game ──
         case 'CREATE_ROOM': {
             const result = gameManager.createRoom(ws, message.playerName);
             ws.send(JSON.stringify(result));
+            // Durumu güncelle
+            if (ws.playerUsername) {
+                onlineTracker.setStatus(ws.playerUsername, 'in_menu', result.roomCode);
+            }
             break;
         }
 
         case 'JOIN_ROOM': {
             const result = gameManager.joinRoom(ws, message.roomCode, message.playerName);
             ws.send(JSON.stringify(result));
+            if (ws.playerUsername) {
+                onlineTracker.setStatus(ws.playerUsername, 'in_menu', message.roomCode);
+            }
             break;
         }
 
         case 'SELECT_FIELD': {
             const roomCode = gameManager.findRoomByWs(ws);
             if (!roomCode) {
+                console.log(`[DEBUG] SELECT_FIELD failed: No room found for ws`);
                 ws.send(JSON.stringify({ type: 'ERROR', message: 'Odada değilsiniz!' }));
                 return;
             }
             const playerId = gameManager.getPlayerId(roomCode, ws);
+            console.log(`[DEBUG] SELECT_FIELD request from player ${playerId} in room ${roomCode} for field ${message.fieldId}`);
             if (playerId !== 1) {
                 ws.send(JSON.stringify({ type: 'ERROR', message: 'Sadece oda sahibi saha seçebilir!' }));
                 return;
             }
-            gameManager.selectField(roomCode, message.fieldId);
+            const selectResult = gameManager.selectField(roomCode, message.fieldId);
+            console.log(`[DEBUG] SELECT_FIELD result:`, selectResult);
             break;
         }
 
         case 'CONFIRM_FIELD': {
             const roomCode = gameManager.findRoomByWs(ws);
+            console.log(`[DEBUG] CONFIRM_FIELD request for room ${roomCode}`);
             if (!roomCode) return;
-            gameManager.confirmField(roomCode, message.settings);
+            const confirmResult = gameManager.confirmField(roomCode, message.settings);
+            console.log(`[DEBUG] CONFIRM_FIELD result:`, confirmResult);
+            // Oyun başladı, durumu güncelle
+            if (ws.playerUsername) {
+                onlineTracker.setStatus(ws.playerUsername, 'in_game', roomCode);
+                broadcastStatusToFriends(ws.playerUsername, 'in_game');
+            }
             break;
         }
 
@@ -272,6 +616,11 @@ function handleMessage(ws, message) {
                     const result = await matchService.recordMatch(message.data);
                     if (result && result.eloChanges) {
                         ws.send(JSON.stringify({ type: 'ELO_UPDATE', eloChanges: result.eloChanges }));
+                    }
+                    // Oyun bitti, durumu güncelle
+                    if (ws.playerUsername) {
+                        onlineTracker.setStatus(ws.playerUsername, 'online');
+                        await broadcastStatusToFriends(ws.playerUsername, 'online');
                     }
                 } catch (err) {
                     console.error('[MATCH] Maç kayıt hatası:', err.message);
@@ -432,6 +781,7 @@ function startServer(port) {
         // Stats emisyonu (Manager.js için)
         setInterval(() => {
             const stats = gameManager.getStats();
+            stats.onlinePlayers = onlineTracker.getOnlineCount();
             console.log(`[STATS] ${JSON.stringify(stats)}`);
         }, 2000);
 
@@ -452,7 +802,9 @@ function startServer(port) {
 }
 
 // Connect to MongoDB then start server
-connectDB().then(() => {
+connectDB().then(async () => {
+    // Mevcut oyunculara memberCode ataması (migration)
+    await playerService.runMigrations();
     startServer(currentPort);
 });
 

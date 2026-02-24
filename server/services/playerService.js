@@ -22,7 +22,7 @@ async function registerPlayer(username) {
 
     const token = crypto.randomUUID();
     const player = await Player.create({ username, token });
-    console.log(`[PLAYER] Yeni oyuncu kaydı: ${username}`);
+    console.log(`[PLAYER] Yeni oyuncu kaydı: ${username} #${player.memberCode}`);
     return { player, token };
 }
 
@@ -49,6 +49,16 @@ async function loginByToken(token) {
 async function getPlayer(username) {
     if (!isDBConnected()) return null;
     return Player.findOne({ username });
+}
+
+/**
+ * Üye kodu ile oyuncu ara
+ * @param {string} memberCode
+ * @returns {Object|null}
+ */
+async function findByMemberCode(memberCode) {
+    if (!isDBConnected()) return null;
+    return Player.findOne({ memberCode: memberCode.toLowerCase().trim() });
 }
 
 /**
@@ -134,11 +144,28 @@ async function getRecentMatches(username, limit = 5) {
     }).sort({ playedAt: -1 }).limit(limit).lean();
 }
 
+/**
+ * Mevcut oyunculara memberCode ataması (migration)
+ */
+async function runMigrations() {
+    if (!isDBConnected()) return;
+    try {
+        const count = await Player.migrateMemberCodes();
+        if (count > 0) {
+            console.log(`[MIGRATION] Toplam ${count} oyuncuya üye kodu atandı.`);
+        }
+    } catch (err) {
+        console.error('[MIGRATION] Üye kodu migration hatası:', err.message);
+    }
+}
+
 module.exports = {
     registerPlayer,
     loginByToken,
     getPlayer,
+    findByMemberCode,
     updateElo,
     updateStats,
-    getRecentMatches
+    getRecentMatches,
+    runMigrations
 };

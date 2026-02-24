@@ -11,6 +11,8 @@
     <link rel="icon" href="futbol.ico" type="image/x-icon">
     <link rel="shortcut icon" href="futbol.ico" type="image/x-icon">
     <link rel="stylesheet" href="css/styles.css?v=5">
+    <link rel="stylesheet" href="css/friends.css?v=1">
+    <link rel="stylesheet" href="css/notifications.css?v=1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -40,6 +42,7 @@
             </div>
             <div id="user-info-bar" class="user-info-bar" style="display:none">
                 <span id="user-display-name">👤 —</span>
+                <span id="user-display-code" class="member-code-badge">#----</span>
                 <span id="user-display-elo" class="elo-badge">Elo: —</span>
             </div>
             <div class="menu-buttons">
@@ -55,6 +58,11 @@
                 <button id="btn-multiplayer" class="menu-btn secondary">
                     <span class="btn-icon">🌐</span>
                     <span class="btn-text">AĞ ÜZERİNDE OYNA</span>
+                </button>
+                <button id="btn-friends" class="menu-btn secondary">
+                    <span class="btn-icon">👥</span>
+                    <span class="btn-text">ARKADAŞLAR</span>
+                    <span id="friends-online-count" class="online-badge" style="display:none"></span>
                 </button>
                 <div class="menu-row">
                     <button id="btn-tournament" class="menu-btn">
@@ -495,6 +503,7 @@
         <div class="profile-container">
             <div class="profile-header">
                 <h3 id="profile-username">—</h3>
+                <div class="profile-member-code" style="color:#4ecdc4;font-size:14px;margin:4px 0"><span id="profile-member-code">#----</span></div>
                 <div class="profile-elo">🏆 Elo: <span id="profile-rating">1000</span></div>
                 <div class="profile-joined">📅 Katılım: <span id="profile-joined">—</span></div>
             </div>
@@ -587,27 +596,140 @@
         <div id="goal-text" class="goal-text">GOOOL!</div>
     </div>
 
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Arkadaşlar Ekranı -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="friends-screen" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-friends" class="back-btn">← Menü</button>
+            <h2>👥 ARKADAŞLAR</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="friends-container">
+            <div class="member-code-display">
+                <span class="code-label">Üye Kodun:</span>
+                <span id="my-member-code" class="code-value">#----</span>
+                <button id="btn-copy-code" class="copy-btn">📋 Kopyala</button>
+            </div>
+            <div class="friend-search-box">
+                <input type="text" id="friend-search-input" placeholder="Üye kodu yaz..." maxlength="5">
+                <button id="btn-friend-search" class="search-btn">🔍 ARA</button>
+            </div>
+            <div id="friend-search-result"></div>
+            <div id="friends-pending-container"></div>
+            <div id="friends-list-container"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Challenge Modal -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="challenge-modal" class="modal hidden">
+        <div class="modal-content challenge-modal-content">
+            <h2>⚔️ <span class="challenge-target-name">—</span>'e Meydan Oku</h2>
+            <div class="form-group">
+                <label>Saha Seç:</label>
+                <div class="challenge-field-grid">
+                    <button class="challenge-field-btn selected" data-field="classic">⚽ Klasik</button>
+                    <button class="challenge-field-btn" data-field="zigzag">⚡ Zigzag</button>
+                    <button class="challenge-field-btn" data-field="diamond">💎 Elmas</button>
+                    <button class="challenge-field-btn" data-field="spiral">🌀 Spiral</button>
+                    <button class="challenge-field-btn" data-field="chaotic">💥 Kaotik</button>
+                    <button class="challenge-field-btn" data-field="castle">🏰 Kale</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Gol Limiti:</label>
+                <div class="challenge-goal-grid">
+                    <button class="challenge-goal-btn" data-goal="3">3</button>
+                    <button class="challenge-goal-btn selected" data-goal="5">5</button>
+                    <button class="challenge-goal-btn" data-goal="7">7</button>
+                    <button class="challenge-goal-btn" data-goal="10">10</button>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="btn-challenge-cancel" class="menu-btn">İPTAL</button>
+                <button id="btn-challenge-send" class="menu-btn primary">⚔️ GÖNDER</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Challenge Bekleme Ekranı -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="challenge-waiting-screen" class="screen">
+        <div class="waiting-container">
+            <div class="waiting-title">⏳ <span class="waiting-opponent-name">—</span>'in yanıtı bekleniyor...</div>
+            <div class="waiting-vs-card">
+                <span>👤 Sen</span>
+                <span>⚔️ bekliyor</span>
+                <span>👤 <span class="waiting-opponent-name">—</span></span>
+            </div>
+            <div class="waiting-match-info">
+                <div class="waiting-field">Saha: —</div>
+                <div class="waiting-goal">Gol: —</div>
+            </div>
+            <div class="waiting-timer">
+                <div class="waiting-timer-text">30 saniye</div>
+                <div class="waiting-timer-bar-bg">
+                    <div class="waiting-timer-bar"></div>
+                </div>
+            </div>
+            <button id="btn-challenge-cancel-waiting" class="menu-btn">İPTAL ET</button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- VS Ekranı -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="challenge-vs-screen" class="screen">
+        <div class="vs-container">
+            <div class="vs-title">⚔️ MAÇ BAŞLIYOR!</div>
+            <div class="vs-players">
+                <div class="vs-player-card">
+                    <div class="player-name vs-player1-name">—</div>
+                    <div class="player-code vs-player1-code">#----</div>
+                    <div class="player-rating vs-player1-rating">⭐ 0</div>
+                </div>
+                <div class="vs-label">VS</div>
+                <div class="vs-player-card">
+                    <div class="player-name vs-player2-name">—</div>
+                    <div class="player-code vs-player2-code">#----</div>
+                    <div class="player-rating vs-player2-rating">⭐ 0</div>
+                </div>
+            </div>
+            <div class="vs-match-info">
+                <div class="vs-field">Saha: —</div>
+                <div class="vs-goal-limit">Gol Limiti: —</div>
+            </div>
+            <div class="vs-countdown">3...</div>
+        </div>
+    </div>
+
     <!-- JavaScript Modules -->
     <!-- AI Modules -->
-    <script src="js/ai/aiSimulator.js?v=6"></script>
-    <script src="js/ai/aiStrategy.js?v=6"></script>
-    <script src="js/ai/aiPersonality.js?v=6"></script>
-    <script src="js/ai/aiAnimator.js?v=6"></script>
-    <script src="js/ai/aiPlayer.js?v=6"></script>
+    <script src="js/ai/aiSimulator.js?v=7"></script>
+    <script src="js/ai/aiStrategy.js?v=7"></script>
+    <script src="js/ai/aiPersonality.js?v=7"></script>
+    <script src="js/ai/aiAnimator.js?v=7"></script>
+    <script src="js/ai/aiPlayer.js?v=7"></script>
 
     <!-- Core Modules -->
-    <script src="js/soundManager.js?v=6"></script>
-    <script src="js/animationManager.js?v=6"></script>
-    <script src="js/effectsManager.js?v=6"></script>
-    <script src="js/physicsClient.js?v=6"></script>
-    <script src="js/fieldRenderer.js?v=6"></script>
-    <script src="js/gameRenderer.js?v=6"></script>
-    <script src="js/inputHandler.js?v=6"></script>
-    <script src="js/networkManager.js?v=6"></script>
-    <script src="js/authManager.js?v=6"></script>
-    <script src="js/leaderboard.js?v=6"></script>
-    <script src="js/tournament.js?v=6"></script>
-    <script src="js/uiManager.js?v=6"></script>
-    <script src="js/main.js?v=6"></script>
+    <script src="js/soundManager.js?v=7"></script>
+    <script src="js/animationManager.js?v=7"></script>
+    <script src="js/effectsManager.js?v=7"></script>
+    <script src="js/physicsClient.js?v=7"></script>
+    <script src="js/fieldRenderer.js?v=7"></script>
+    <script src="js/gameRenderer.js?v=7"></script>
+    <script src="js/inputHandler.js?v=7"></script>
+    <script src="js/networkManager.js?v=7"></script>
+    <script src="js/authManager.js?v=7"></script>
+    <script src="js/notificationManager.js?v=1"></script>
+    <script src="js/friends.js?v=1"></script>
+    <script src="js/challengeUI.js?v=1"></script>
+    <script src="js/leaderboard.js?v=7"></script>
+    <script src="js/tournament.js?v=7"></script>
+    <script src="js/uiManager.js?v=7"></script>
+    <script src="js/main.js?v=7"></script>
 </body>
 </html>

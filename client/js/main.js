@@ -983,6 +983,37 @@ const Game = (() => {
             case 'TOURNAMENT_LIST':
                 // handled by rest api
                 break;
+
+            // ── Friend System Messages ──
+            case 'FRIEND_LIST':
+            case 'FRIEND_PENDING_LIST':
+            case 'FRIEND_SEARCH_RESULT':
+            case 'FRIEND_REQUEST_SENT':
+            case 'FRIEND_REQUEST_RECEIVED':
+            case 'FRIEND_REQUEST_ACCEPTED':
+            case 'FRIEND_REQUEST_DECLINED':
+            case 'FRIEND_REMOVED':
+            case 'FRIEND_BLOCKED':
+            case 'FRIEND_UNBLOCKED':
+            case 'FRIEND_ERROR':
+            case 'FRIEND_STATUS_CHANGED':
+                if (typeof FriendsManager !== 'undefined') {
+                    FriendsManager.handleMessage(data);
+                }
+                break;
+
+            // ── Game Challenge Messages ──
+            case 'GAME_CHALLENGE_SENT':
+            case 'GAME_CHALLENGE_RECEIVED':
+            case 'GAME_CHALLENGE_ACCEPTED':
+            case 'GAME_CHALLENGE_DECLINED':
+            case 'GAME_CHALLENGE_EXPIRED':
+            case 'GAME_CHALLENGE_CANCELLED':
+            case 'GAME_CHALLENGE_ERROR':
+                if (typeof ChallengeUI !== 'undefined') {
+                    ChallengeUI.handleMessage(data);
+                }
+                break;
         }
     }
 

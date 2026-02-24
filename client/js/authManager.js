@@ -73,12 +73,14 @@ const AuthManager = (() => {
         // Update UI
         const nameEl = document.getElementById('user-display-name');
         const eloEl = document.getElementById('user-display-elo');
+        const codeEl = document.getElementById('user-display-code');
         const bar = document.getElementById('user-info-bar');
-        if (nameEl) nameEl.textContent = `👤 ${currentPlayer.username}`;
-        if (eloEl) eloEl.textContent = `Elo: ${currentPlayer.rating}`;
+        if (nameEl) nameEl.textContent = '\u{1F464} ' + currentPlayer.username;
+        if (eloEl) eloEl.textContent = 'Elo: ' + currentPlayer.rating;
+        if (codeEl) codeEl.textContent = '#' + (currentPlayer.memberCode || '----');
         if (bar) bar.style.display = 'flex';
 
-        console.log(`[AUTH] Giriş başarılı: ${currentPlayer.username}`);
+        console.log('[AUTH] Giris basarili: ' + currentPlayer.username + ' #' + currentPlayer.memberCode);
     }
 
     /**
@@ -120,6 +122,7 @@ const AuthManager = (() => {
         const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
 
         setEl('profile-username', currentPlayer.username);
+        setEl('profile-member-code', '#' + (currentPlayer.memberCode || '----'));
         setEl('profile-rating', currentPlayer.rating);
         setEl('profile-matches', s.totalMatches || 0);
         setEl('profile-wins', s.wins || 0);

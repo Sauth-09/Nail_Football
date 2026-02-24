@@ -1,0 +1,548 @@
+/* friends.css - Arkadaş Sistemi Stilleri */
+
+/* ═══════════ Çevrimiçi Badge (Menü Butonu) ═══════════ */
+
+.online-badge {
+    font-size: 12px;
+    font-weight: 700;
+    color: #4ecdc4;
+    margin-left: 6px;
+}
+
+/* ═══════════ Arkadaşlar Ekranı ═══════════ */
+
+.friends-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Üye kodu gösterimi */
+.member-code-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.member-code-display .code-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+}
+
+.member-code-display .code-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #4ecdc4;
+    letter-spacing: 2px;
+    font-family: 'Outfit', monospace;
+}
+
+.member-code-display .copy-btn {
+    background: rgba(78, 205, 196, 0.2);
+    border: 1px solid rgba(78, 205, 196, 0.3);
+    color: #4ecdc4;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'Outfit', sans-serif;
+    transition: background 0.2s;
+}
+
+.member-code-display .copy-btn:hover {
+    background: rgba(78, 205, 196, 0.3);
+}
+
+/* Arama kutusu */
+.friend-search-box {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.friend-search-box input {
+    flex: 1;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 16px;
+    font-family: 'Outfit', monospace;
+    letter-spacing: 3px;
+    text-align: center;
+    text-transform: lowercase;
+}
+
+.friend-search-box input::placeholder {
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.friend-search-box .search-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #4ecdc4, #44b09e);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+    cursor: pointer;
+    font-size: 14px;
+    transition: transform 0.15s;
+}
+
+.friend-search-box .search-btn:active {
+    transform: scale(0.95);
+}
+
+/* Arama sonucu */
+.search-result-card {
+    padding: 16px;
+    border-radius: 12px;
+    margin-top: 8px;
+    animation: fadeIn 0.3s ease;
+}
+
+.search-result-card.found {
+    background: rgba(78, 205, 196, 0.08);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+}
+
+.search-result-card.error {
+    background: rgba(255, 107, 107, 0.08);
+    border: 1px solid rgba(255, 107, 107, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.search-result-card.info {
+    background: rgba(249, 200, 70, 0.08);
+    border: 1px solid rgba(249, 200, 70, 0.2);
+}
+
+.search-player-info {
+    margin-bottom: 12px;
+}
+
+.search-player-name {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.search-player-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.search-result-card .send-request-btn {
+    width: 100%;
+    margin-top: 8px;
+}
+
+/* Bekleyen istekler */
+.pending-request-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(249, 200, 70, 0.06);
+    border: 1px solid rgba(249, 200, 70, 0.15);
+    border-radius: 10px;
+    margin-bottom: 6px;
+}
+
+.pending-info {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.pending-actions {
+    display: flex;
+    gap: 6px;
+}
+
+/* Arkadaş listesi bölüm başlıkları */
+.friends-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 8px 4px 4px;
+    letter-spacing: 0.5px;
+}
+
+/* Arkadaş kartı */
+.friend-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    margin-bottom: 4px;
+    transition: background 0.2s;
+}
+
+.friend-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.friend-card-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.friend-status-dot {
+    font-size: 14px;
+}
+
+.friend-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.friend-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.friend-meta {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.friend-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.friend-challenge-btn.small {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: 36px;
+}
+
+.friend-status-game {
+    font-size: 12px;
+    color: rgba(255, 200, 50, 0.8);
+    padding: 6px 10px;
+    background: rgba(255, 200, 50, 0.1);
+    border-radius: 6px;
+}
+
+.icon-btn-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+
+.icon-btn-sm:hover {
+    background: rgba(255, 100, 100, 0.15);
+    color: #ff6b6b;
+}
+
+/* Boş arkadaş listesi */
+.friends-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.friends-empty p:first-child {
+    font-size: 18px;
+    margin-bottom: 6px;
+}
+
+/* Üye kodu badge */
+.member-code-badge {
+    font-size: 12px;
+    color: #4ecdc4;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+/* ═══════════ Challenge Modal ═══════════ */
+
+.challenge-modal-content {
+    max-width: 400px;
+}
+
+.challenge-target-name {
+    color: #4ecdc4;
+    font-weight: 700;
+}
+
+.challenge-field-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.challenge-field-btn {
+    padding: 10px 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.challenge-field-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.challenge-field-btn.selected {
+    border-color: #4ecdc4;
+    background: rgba(78, 205, 196, 0.15);
+}
+
+.challenge-goal-grid {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.challenge-goal-btn {
+    flex: 1;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.challenge-goal-btn.selected {
+    border-color: #fca311;
+    background: rgba(252, 163, 17, 0.15);
+}
+
+/* ═══════════ Bekleme Ekranı ═══════════ */
+
+.waiting-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 20px;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.waiting-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    animation: pulse-text 2s ease-in-out infinite;
+}
+
+@keyframes pulse-text {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.waiting-vs-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 30px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.waiting-match-info {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+}
+
+.waiting-timer {
+    margin: 10px 0;
+}
+
+.waiting-timer-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fca311;
+    margin-bottom: 8px;
+}
+
+.waiting-timer-bar-bg {
+    width: 200px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.waiting-timer-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #fca311, #ff6b6b);
+    border-radius: 3px;
+    width: 100%;
+}
+
+/* ═══════════ VS Ekranı ═══════════ */
+
+.vs-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 20px;
+    padding: 40px 20px;
+}
+
+.vs-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+}
+
+.vs-players {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.vs-player-card {
+    width: 140px;
+    padding: 20px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.vs-player-card .player-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.vs-player-card .player-code {
+    font-size: 13px;
+    color: #4ecdc4;
+    margin-bottom: 6px;
+}
+
+.vs-player-card .player-rating {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.vs-label {
+    font-size: 32px;
+    font-weight: 800;
+    color: #ff6b6b;
+    text-shadow: 0 0 20px rgba(255, 107, 107, 0.4);
+}
+
+.vs-match-info {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    text-align: center;
+}
+
+.vs-countdown {
+    font-size: 48px;
+    font-weight: 800;
+    color: #fca311;
+    text-shadow: 0 0 30px rgba(252, 163, 17, 0.5);
+    animation: pulse-text 1s ease-in-out infinite;
+}
+
+/* ═══════════ Animasyonlar ═══════════ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ═══════════ Responsive ═══════════ */
+
+@media (max-width: 480px) {
+    .friends-container {
+        padding: 10px;
+    }
+
+    .friend-card {
+        padding: 8px 10px;
+    }
+
+    .vs-players {
+        gap: 10px;
+    }
+
+    .vs-player-card {
+        width: 120px;
+        padding: 14px 10px;
+    }
+
+    .challenge-field-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .notification-container {
+        max-width: 100%;
+        left: 10px;
+        right: 10px;
+        width: auto;
+    }
+}

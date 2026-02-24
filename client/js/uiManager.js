@@ -287,6 +287,76 @@ const UIManager = (() => {
             SoundManager.playClick();
             hideModal('confirm-modal');
         });
+
+        // ── Friends Screen ──
+        const btnFriends = document.getElementById('btn-friends');
+        if (btnFriends) btnFriends.addEventListener('click', () => {
+            SoundManager.playClick();
+            if (typeof AuthManager !== 'undefined' && !AuthManager.isLoggedIn()) {
+                showScreen('auth-screen');
+            } else {
+                showScreen('friends-screen');
+                // Üye kodunu göster
+                const player = AuthManager.getPlayer();
+                const codeEl = document.getElementById('my-member-code');
+                if (codeEl && player) codeEl.textContent = '#' + (player.memberCode || '----');
+                // Listeyi yenile
+                if (typeof FriendsManager !== 'undefined') FriendsManager.refreshFriendsList();
+            }
+        });
+
+        const btnCopyCode = document.getElementById('btn-copy-code');
+        if (btnCopyCode) btnCopyCode.addEventListener('click', () => {
+            if (typeof FriendsManager !== 'undefined') FriendsManager.copyMemberCode();
+        });
+
+        const btnFriendSearch = document.getElementById('btn-friend-search');
+        if (btnFriendSearch) btnFriendSearch.addEventListener('click', () => {
+            const input = document.getElementById('friend-search-input');
+            if (input && typeof FriendsManager !== 'undefined') {
+                FriendsManager.searchMember(input.value.trim());
+            }
+        });
+
+        // Enter tuşu ile arama
+        const friendSearchInput = document.getElementById('friend-search-input');
+        if (friendSearchInput) friendSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && typeof FriendsManager !== 'undefined') {
+                FriendsManager.searchMember(friendSearchInput.value.trim());
+            }
+        });
+
+        // ── Challenge Modal ──
+        // Saha seçim butonları
+        document.querySelectorAll('.challenge-field-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.challenge-field-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+            });
+        });
+
+        // Gol limiti butonları
+        document.querySelectorAll('.challenge-goal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.challenge-goal-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+            });
+        });
+
+        const btnChallengeSend = document.getElementById('btn-challenge-send');
+        if (btnChallengeSend) btnChallengeSend.addEventListener('click', () => {
+            if (typeof ChallengeUI !== 'undefined') ChallengeUI.sendChallenge();
+        });
+
+        const btnChallengeCancel = document.getElementById('btn-challenge-cancel');
+        if (btnChallengeCancel) btnChallengeCancel.addEventListener('click', () => {
+            hideModal('challenge-modal');
+        });
+
+        const btnChallengeCancelWaiting = document.getElementById('btn-challenge-cancel-waiting');
+        if (btnChallengeCancelWaiting) btnChallengeCancelWaiting.addEventListener('click', () => {
+            if (typeof ChallengeUI !== 'undefined') ChallengeUI.cancelChallenge();
+        });
     }
 
     /**
