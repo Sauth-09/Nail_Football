@@ -75,8 +75,28 @@ app.get(['/', '/index.html'], (req, res) => {
     });
 });
 
+// Basic Auth Middleware for Admin Panel
+const adminAuth = (req, res, next) => {
+    // Disable auth in development if no env vars are set, or strictly enforce it
+    const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '123456';
+
+    // Parse the 'Authorization' header
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+
+    // Verify
+    if (login && password && login === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        return next();
+    }
+
+    // Access Denied
+    res.set('WWW-Authenticate', 'Basic realm="401"');
+    res.status(401).send('Yetkisiz Erişim! Lütfen admin bilgilerinizi girin.');
+};
+
 // Admin Paneli (Render vb. platformlarda ayni port uzerinden calismasi icin)
-app.use('/admin', express.static(path.join(__dirname, 'managerUI')));
+app.use('/admin', adminAuth, express.static(path.join(__dirname, 'managerUI')));
 
 // Serve client files
 app.use(express.static(path.join(__dirname, '..', 'client'), {
@@ -185,6 +205,19 @@ wss.on('connection', (ws, req) => {
 
     // Check if this is an admin panel connection
     if (req.url === '/manager-ws') {
+        const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+        const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '123456';
+
+        // WS authentication check (Basic Auth headers sent by the browser)
+        const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+        const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+
+        if (!login || !password || login !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+            console.log(`[WARN] Yetkisiz Admin WebSocket bağlantı denemesi: ${clientIp}`);
+            ws.send(JSON.stringify({ type: 'log', level: 'error', text: 'Yetkisiz Erişim.' }));
+            return ws.close(1008, 'Unauthorized'); // Policy Violation
+        }
+
         ws.isAdmin = true;
         console.log(`[INFO] Admin Paneli bağlandı: ${clientIp}`);
 
