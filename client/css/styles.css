@@ -1067,13 +1067,13 @@ body {
 /* ═══════════════════════════════════════════════ */
 
 .canvas-container {
-    flex: 1;
+    flex: 1 1 auto;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
-    /* Ekranın %100'ünden sadece üst bar boşluğunu ve ufak bir payı çıkarıyoruz */
-    max-height: calc(100vh - 60px);
+    /* Ekranın %100'ünden sadece üst bar yüksekliğini (46px civarı) çıkarıyoruz, alta sıfırlıyoruz */
+    max-height: calc(100vh - 46px);
     overflow: hidden;
     position: relative;
     z-index: 1;
