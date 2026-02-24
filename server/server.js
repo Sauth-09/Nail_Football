@@ -526,7 +526,9 @@ function handleMessage(ws, message) {
                         message.targetUsername,
                         message.fieldId,
                         message.goalLimit,
-                        Player
+                        Player,
+                        message.goalkeeperEnabled,
+                        message.goalkeeperSize
                     );
                     if (result.error) {
                         ws.send(JSON.stringify({ type: 'GAME_CHALLENGE_ERROR', message: result.error }));
@@ -539,6 +541,8 @@ function handleMessage(ws, message) {
                             toRating: result.toRating,
                             fieldId: result.fieldId,
                             goalLimit: result.goalLimit,
+                            goalkeeperEnabled: result.goalkeeperEnabled,
+                            goalkeeperSize: result.goalkeeperSize,
                             expiresIn: result.expiresIn
                         }));
                     }

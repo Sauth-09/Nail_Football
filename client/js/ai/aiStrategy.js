@@ -34,7 +34,7 @@ class AIStrategy {
     /**
      * Belirtilen saha ve duruma göre simülasyonları döndürür
      */
-    async evaluateAllShots(simulator, ballPos, field, scores, targetGoal, ownGoal) {
+    async evaluateAllShots(simulator, ballPos, field, scores, targetGoal, ownGoal, options = {}) {
         const config = this.scanConfig[this.difficulty];
         const results = [];
         const combinations = [];
@@ -53,7 +53,7 @@ class AIStrategy {
             const end = Math.min(i + CHUNK_SIZE, combinations.length);
             for (let j = i; j < end; j++) {
                 const { angleRad, power } = combinations[j];
-                const simResult = simulator.simulate(ballPos, angleRad, power);
+                const simResult = simulator.simulate(ballPos, angleRad, power, options);
                 const score = this.scoreShot(simResult, field, targetGoal, ownGoal, scores);
 
                 results.push({

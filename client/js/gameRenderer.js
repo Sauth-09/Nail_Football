@@ -202,7 +202,7 @@ const GameRenderer = (() => {
             const gkLeftX = 70;
             const gkRightX = field.fieldWidth - 70;
             const gkWidth = 12;
-            const gkHeight = 40;
+            const gkHeight = (typeof UIManager !== 'undefined' ? UIManager.getSettings().goalkeeperSize : 30) || 30;
 
             const currentY = PhysicsClient.getGoalkeeperY(t, field, gkBaseY);
             drawGoalkeeper(ctx, gkLeftX, currentY, gkWidth, gkHeight, '#E0E0E0'); // Metallic silver

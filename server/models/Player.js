@@ -100,7 +100,7 @@ const playerSchema = new mongoose.Schema({
 });
 
 // Pre-save hook: Yeni oyuncuya otomatik memberCode ata
-playerSchema.pre('save', async function (next) {
+playerSchema.pre('save', async function () {
     if (this.isNew && !this.memberCode) {
         let code;
         let exists = true;
@@ -115,12 +115,11 @@ playerSchema.pre('save', async function (next) {
         }
 
         if (exists) {
-            return next(new Error('Üye kodu oluşturulamadı'));
+            throw new Error('Üye kodu oluşturulamadı');
         }
 
         this.memberCode = code;
     }
-    next();
 });
 
 playerSchema.index({ username: 1 });

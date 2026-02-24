@@ -23,7 +23,8 @@ const UIManager = (() => {
         volume: 70,
         sfx: true,
         vibration: true,
-        goalkeeperEnabled: true
+        goalkeeperEnabled: true,
+        goalkeeperSize: 30
     };
 
     /** @type {Array} Available fields */
@@ -461,20 +462,34 @@ const UIManager = (() => {
             });
         });
 
-        // Goalkeeper Toggle (Local/Host)
+        // Goalkeeper Toggle & Size (Local/Host)
         const gkToggle = document.getElementById('gk-toggle');
+        const gkSize = document.getElementById('gk-size');
         if (gkToggle) {
             gkToggle.addEventListener('change', () => {
                 settings.goalkeeperEnabled = gkToggle.checked;
                 saveSettings();
             });
         }
+        if (gkSize) {
+            gkSize.addEventListener('change', () => {
+                settings.goalkeeperSize = parseInt(gkSize.value) || 30;
+                saveSettings();
+            });
+        }
 
-        // Challenge Goalkeeper Toggle
+        // Challenge Goalkeeper Toggle & Size
         const challengeGkToggle = document.getElementById('challenge-gk-toggle');
+        const challengeGkSize = document.getElementById('challenge-gk-size');
         if (challengeGkToggle) {
             challengeGkToggle.addEventListener('change', () => {
                 settings.goalkeeperEnabled = challengeGkToggle.checked;
+                saveSettings();
+            });
+        }
+        if (challengeGkSize) {
+            challengeGkSize.addEventListener('change', () => {
+                settings.goalkeeperSize = parseInt(challengeGkSize.value) || 30;
                 saveSettings();
             });
         }
@@ -1072,10 +1087,14 @@ const UIManager = (() => {
         }
 
         const gkToggle = document.getElementById('gk-toggle');
+        const gkSize = document.getElementById('gk-size');
         if (gkToggle) gkToggle.checked = settings.goalkeeperEnabled;
+        if (gkSize && settings.goalkeeperSize) gkSize.value = settings.goalkeeperSize;
 
         const challengeGkToggle = document.getElementById('challenge-gk-toggle');
+        const challengeGkSize = document.getElementById('challenge-gk-size');
         if (challengeGkToggle) challengeGkToggle.checked = settings.goalkeeperEnabled;
+        if (challengeGkSize && settings.goalkeeperSize) challengeGkSize.value = settings.goalkeeperSize;
 
         const volumeLabel = document.getElementById('volume-label');
         if (volumeLabel) volumeLabel.textContent = `${settings.volume}%`;

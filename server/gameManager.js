@@ -227,7 +227,8 @@ class GameManager {
                 scores: [0, 0],
                 currentPlayer: 1
             },
-            goalkeeperEnabled: room.settings.goalkeeperEnabled === true
+            goalkeeperEnabled: room.settings.goalkeeperEnabled === true,
+            goalkeeperSize: room.settings.goalkeeperSize || 30
         };
 
         this.broadcastToRoom(room, startData);
@@ -252,6 +253,7 @@ class GameManager {
 
         const options = {
             goalkeeperEnabled: room.settings?.goalkeeperEnabled === true,
+            goalkeeperSize: room.settings?.goalkeeperSize || 30,
             shotStartTime: shotStartTime || Date.now()
         };
 

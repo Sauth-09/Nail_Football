@@ -55,7 +55,8 @@ class AIPlayer {
             gameState.field,
             gameState.scores,
             this.targetGoal,
-            this.ownGoal
+            this.ownGoal,
+            gameState.options
         );
 
         // 3. Seçim ve Hata Ekleme

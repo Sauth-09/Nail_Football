@@ -39,7 +39,16 @@ async function loginByPassword(username, password) {
     if (!isDBConnected()) return null;
 
     const player = await Player.findOne({ username });
-    if (!player || !player.passwordHash) return null;
+    if (!player) return null;
+
+    if (!player.passwordHash) {
+        // Eski hesap, şifresi yok. İlk girilen şifreyi bu hesaba kaydet.
+        player.passwordHash = await bcrypt.hash(password, 10);
+        player.lastActive = new Date();
+        await player.save();
+        console.log(`[PLAYER] Eski hesaba şifre tanımlandı: ${username}`);
+        return { player, token: player.token };
+    }
 
     const isMatch = await bcrypt.compare(password, player.passwordHash);
     if (!isMatch) return null;

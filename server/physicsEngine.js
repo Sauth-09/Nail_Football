@@ -111,7 +111,7 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
     trajectory.push({ x: ball.x, y: ball.y, t: 0 });
 
     const gkWidth = 12;
-    const gkHeight = 40;
+    const gkHeight = options.goalkeeperSize || 30;
     const gkBaseY = fieldHeight / 2;
     const gkLeftX = 70;
     const gkRightX = fieldWidth - 70;

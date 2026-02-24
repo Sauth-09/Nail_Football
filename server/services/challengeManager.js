@@ -26,7 +26,7 @@ class ChallengeManager {
     /**
      * Yeni oyun daveti oluştur
      */
-    async createChallenge(fromUsername, targetUsername, fieldId, goalLimit, Player) {
+    async createChallenge(fromUsername, targetUsername, fieldId, goalLimit, Player, goalkeeperEnabled, goalkeeperSize) {
         // Kontroller
         if (fromUsername === targetUsername) {
             return { error: 'Kendine davet gönderemezsin' };
@@ -78,6 +78,8 @@ class ChallengeManager {
             toRating: targetPlayer.rating,
             fieldId: fieldId,
             goalLimit: goalLimit,
+            goalkeeperEnabled: goalkeeperEnabled,
+            goalkeeperSize: goalkeeperSize,
             status: 'pending',
             createdAt: Date.now(),
             expiresAt: Date.now() + expiresIn
@@ -95,6 +97,8 @@ class ChallengeManager {
             fromRating: fromPlayer.rating,
             fieldId: fieldId,
             goalLimit: goalLimit,
+            goalkeeperEnabled: goalkeeperEnabled,
+            goalkeeperSize: goalkeeperSize,
             expiresIn: expiresIn
         });
 
@@ -144,7 +148,9 @@ class ChallengeManager {
             challengeId: challengeId,
             roomCode: roomCode,
             fieldId: challenge.fieldId,
-            goalLimit: challenge.goalLimit
+            goalLimit: challenge.goalLimit,
+            goalkeeperEnabled: challenge.goalkeeperEnabled,
+            goalkeeperSize: challenge.goalkeeperSize
         };
 
         // Davet edene bildir

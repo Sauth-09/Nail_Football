@@ -92,7 +92,7 @@ const PhysicsClient = (() => {
         let frame = 0;
 
         const gkWidth = 12;
-        const gkHeight = 40;
+        const gkHeight = options.goalkeeperSize || 30;
         const gkBaseY = field.fieldHeight / 2;
         const gkLeftX = 70;
         const gkRightX = field.fieldWidth - 70;

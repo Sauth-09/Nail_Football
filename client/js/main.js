@@ -626,7 +626,11 @@ const Game = (() => {
                     const aiGameState = {
                         ball: ballPos,
                         field: currentField,
-                        scores: scores
+                        scores: scores,
+                        options: {
+                            goalkeeperEnabled: UIManager.getSettings().goalkeeperEnabled,
+                            goalkeeperSize: UIManager.getSettings().goalkeeperSize
+                        }
                     };
                     const shot = await aiPlayer.takeTurn(aiGameState);
                     if (shot && shot.angle !== undefined && shot.power !== undefined) {

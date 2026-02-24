@@ -70,7 +70,7 @@ class AISimulator {
         let frame = 0;
 
         const gkWidth = 12;
-        const gkHeight = 40;
+        const gkHeight = options.goalkeeperSize || 30;
         const gkBaseY = this.field.fieldHeight / 2;
         const gkLeftX = 70;
         const gkRightX = this.field.fieldWidth - 70;
