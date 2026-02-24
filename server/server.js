@@ -53,28 +53,6 @@ const challengeManager = new ChallengeManager(onlineTracker);
 
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
 
-// Otomatik Cache-Busting: index.html isteklerini yakalayıp versiyonları güncelleyelim
-app.get(['/', '/index.html'], (req, res) => {
-    const indexPath = path.join(__dirname, '..', 'client', 'index.html');
-    fs.readFile(indexPath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(500).send('Error loading index.html');
-        }
-
-        // CSS ve JS dosyalarındaki ?v= versiyon takılarını o anki zaman damgasıyla değiştir
-        const timestamp = Date.now();
-        const html = data.replace(/\?v=\d+/g, `?v=${timestamp}`);
-
-        // index.html'in kendisinin önbelleğe alınmasını kesinlikle engelle
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.set('Pragma', 'no-cache');
-        res.set('Expires', '0');
-        res.set('Surrogate-Control', 'no-store');
-
-        res.send(html);
-    });
-});
-
 // Basic Auth Middleware for Admin Panel
 const adminAuth = (req, res, next) => {
     // Disable auth in development if no env vars are set, or strictly enforce it
