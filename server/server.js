@@ -836,9 +836,14 @@ function startServer(port) {
 
     }).on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
-            console.log(`[INFO] Port ${port} kullanimda, ${port + 1} portu deneniyor...`);
-            server.removeAllListeners('error');
-            startServer(port + 1);
+            if (isProduction) {
+                console.error(`[ERROR] Port ${port} kullanimda. Production ortaminda port degistirilemez, islem durduruluyor.`);
+                process.exit(1);
+            } else {
+                console.log(`[INFO] Port ${port} kullanimda, ${port + 1} portu deneniyor...`);
+                server.removeAllListeners('error');
+                startServer(port + 1);
+            }
         } else {
             console.error('[ERROR] Sunucu baslatilamadi:', err);
         }
