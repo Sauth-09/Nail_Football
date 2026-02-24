@@ -39,6 +39,10 @@ const AuthManager = (() => {
      * Register a new player via WebSocket
      */
     async function register(username, password) {
+        // Clear old tokens to prevent an auto-login race condition
+        authToken = null;
+        localStorage.removeItem('nf_auth_token');
+
         if (!NetworkManager.isConnected()) {
             const connected = await NetworkManager.connect();
             if (!connected) {
@@ -53,6 +57,10 @@ const AuthManager = (() => {
      * Login via WebSocket
      */
     async function login(username, password) {
+        // Clear old tokens to prevent an auto-login race condition
+        authToken = null;
+        localStorage.removeItem('nf_auth_token');
+
         if (!NetworkManager.isConnected()) {
             const connected = await NetworkManager.connect();
             if (!connected) {
