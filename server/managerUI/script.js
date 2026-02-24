@@ -1,5 +1,6 @@
 // WebSocket connection to the manager
-const ws = new WebSocket(`ws://${location.host}/manager-ws`);
+const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+const ws = new WebSocket(`${wsProtocol}//${location.host}/admin/manager-ws`);
 
 // DOM Elements
 const statusDot = document.getElementById('status-dot');

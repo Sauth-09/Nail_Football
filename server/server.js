@@ -204,7 +204,7 @@ wss.on('connection', (ws, req) => {
     const clientIp = req.socket.remoteAddress;
 
     // Check if this is an admin panel connection
-    if (req.url === '/manager-ws') {
+    if (req.url === '/manager-ws' || req.url === '/admin/manager-ws') {
         const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
         const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '123456';
 
