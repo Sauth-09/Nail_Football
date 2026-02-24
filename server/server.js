@@ -649,6 +649,10 @@ function handleMessage(ws, message) {
                         ws.playerUsername,
                         Player
                     );
+                    if (result.success) {
+                        // Odayı yarat: client'lar 3,2,1 saydıktan sonra bu odaya katılacak
+                        gameManager.createChallengeRoom(result.roomCode, result.challenge);
+                    }
                     if (result.error) {
                         ws.send(JSON.stringify({ type: 'GAME_CHALLENGE_ERROR', message: result.error }));
                     }
