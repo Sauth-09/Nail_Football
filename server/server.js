@@ -18,6 +18,7 @@ const http = require('http');
 const { WebSocketServer } = require('ws');
 const os = require('os');
 const path = require('path');
+const fs = require('fs');
 const { exec } = require('child_process');
 
 const GameManager = require('./gameManager');
@@ -31,6 +32,7 @@ const onlineTracker = require('./services/onlineTracker');
 const friendService = require('./services/friendService');
 const ChallengeManager = require('./services/challengeManager');
 const Player = require('./models/Player');
+const bcrypt = require('bcryptjs');
 
 // ═══════════════════════════════════════════════════
 // Sunucu Yapılandırması
@@ -50,6 +52,31 @@ const challengeManager = new ChallengeManager(onlineTracker);
 // ═══════════════════════════════════════════════════
 
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
+
+// Otomatik Cache-Busting: index.html isteklerini yakalayıp versiyonları güncelleyelim
+app.get(['/', '/index.html'], (req, res) => {
+    const indexPath = path.join(__dirname, '..', 'client', 'index.html');
+    fs.readFile(indexPath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).send('Error loading index.html');
+        }
+
+        // CSS ve JS dosyalarındaki ?v= versiyon takılarını o anki zaman damgasıyla değiştir
+        const timestamp = Date.now();
+        const html = data.replace(/\?v=\d+/g, `?v=${timestamp}`);
+
+        // index.html'in kendisinin önbelleğe alınmasını kesinlikle engelle
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+        res.set('Surrogate-Control', 'no-store');
+
+        res.send(html);
+    });
+});
+
+// Admin Paneli (Render vb. platformlarda ayni port uzerinden calismasi icin)
+app.use('/admin', express.static(path.join(__dirname, 'managerUI')));
 
 // Serve client files
 app.use(express.static(path.join(__dirname, '..', 'client'), {
@@ -155,7 +182,41 @@ async function broadcastStatusToFriends(username, status) {
 
 wss.on('connection', (ws, req) => {
     const clientIp = req.socket.remoteAddress;
-    console.log(`[INFO] Yeni bağlantı: ${clientIp}`);
+
+    // Check if this is an admin panel connection
+    if (req.url === '/manager-ws') {
+        ws.isAdmin = true;
+        console.log(`[INFO] Admin Paneli bağlandı: ${clientIp}`);
+
+        // Initial state
+        ws.send(JSON.stringify({
+            type: 'state',
+            data: {
+                isRunning: true,
+                port: currentPort,
+                players: onlineTracker.getOnlineCount(),
+                rooms: gameManager.rooms.size,
+                autostart: false,
+                firewallStatus: 'ok' // Render is always internet accessible
+            }
+        }));
+
+        ws.on('message', (message) => {
+            try {
+                const data = JSON.parse(message);
+                if (data.type === 'ping') return;
+
+                if (data.type === 'cmd') {
+                    // Admin commands processor
+                    handleAdminCommand(data, ws);
+                }
+            } catch (e) { }
+        });
+        return; // Don't process normal game logic
+    }
+
+    // Normal Game Connection
+    console.log(`[INFO] Yeni oyun bağlantısı: ${clientIp}`);
 
     ws.isAlive = true;
     ws.on('pong', () => { ws.isAlive = true; });
@@ -780,6 +841,81 @@ function broadcastAll(data) {
 }
 
 // ═══════════════════════════════════════════════════
+// Admin Panel Kontrol İşleyicisi
+// ═══════════════════════════════════════════════════
+
+function handleAdminCommand(data, ws) {
+    switch (data.cmd) {
+        case 'getUsers':
+            (async () => {
+                if (!isDBConnected()) {
+                    ws.send(JSON.stringify({ type: 'usersData', error: 'Veritabanı bağlı değil!' }));
+                    return;
+                }
+                const page = data.page || 1;
+                const limit = 50;
+                const skip = (page - 1) * limit;
+                const totalCount = await Player.countDocuments();
+                const users = await Player.find().sort({ createdAt: -1 }).skip(skip).limit(limit).select('-passwordHash -token').lean();
+                ws.send(JSON.stringify({ type: 'usersData', users, totalCount, page, totalPages: Math.ceil(totalCount / limit) }));
+            })();
+            break;
+        case 'addUser':
+            (async () => {
+                if (!isDBConnected()) return;
+                try {
+                    const existing = await Player.findOne({ username: data.username });
+                    if (existing) {
+                        ws.send(JSON.stringify({ type: 'adminActionError', message: 'Kullanıcı adı zaten var.' }));
+                        return;
+                    }
+                    const token = require('crypto').randomUUID();
+                    const passwordHash = await bcrypt.hash(data.password, 10);
+                    await Player.create({ username: data.username, passwordHash, token });
+                    ws.send(JSON.stringify({ type: 'adminActionSuccess', message: 'Kullanıcı oluşturuldu.' }));
+                    handleAdminCommand({ cmd: 'getUsers', page: 1 }, ws);
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'adminActionError', message: err.message }));
+                }
+            })();
+            break;
+        case 'deleteUser':
+            (async () => {
+                if (!isDBConnected()) return;
+                try {
+                    await Player.findByIdAndDelete(data.userId);
+                    ws.send(JSON.stringify({ type: 'adminActionSuccess', message: 'Kullanıcı silindi.' }));
+                    handleAdminCommand({ cmd: 'getUsers', page: 1 }, ws);
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'adminActionError', message: err.message }));
+                }
+            })();
+            break;
+        case 'changePassword':
+            (async () => {
+                if (!isDBConnected()) return;
+                try {
+                    const passwordHash = await bcrypt.hash(data.newPassword, 10);
+                    await Player.findByIdAndUpdate(data.userId, { passwordHash });
+                    ws.send(JSON.stringify({ type: 'adminActionSuccess', message: 'Şifre değiştirildi.' }));
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'adminActionError', message: err.message }));
+                }
+            })();
+            break;
+        case 'kill':
+            console.log("Admin forced shutdown.");
+            process.exit(1);
+            break;
+        case 'start':
+        case 'stop':
+        case 'restart':
+            ws.send(JSON.stringify({ type: 'log', level: 'info', text: 'Bulut sistemlerde (Render), kapatma veya yeniden başlatma işlemleri doğrudan Render paneli üzerinden yapılmalıdır.' }));
+            break;
+    }
+}
+
+// ═══════════════════════════════════════════════════
 // Heartbeat (Bağlantı Kontrolü)
 // ═══════════════════════════════════════════════════
 
@@ -826,11 +962,29 @@ function startServer(port) {
     server.listen(port, '0.0.0.0', () => {
         console.log(`[INFO] Oyun sunucusu baslatildi (Port: ${port})`);
 
-        // Stats emisyonu (Manager.js için)
+        // Stats emisyonu (Manager.js ve Client için)
         setInterval(() => {
             const stats = gameManager.getStats();
             stats.onlinePlayers = onlineTracker.getOnlineCount();
             console.log(`[STATS] ${JSON.stringify(stats)}`);
+            broadcastAll({ type: 'GLOBAL_STATS', stats });
+
+            // Send stats to connected admin panels
+            wss.clients.forEach(client => {
+                if (client.readyState === 1 && client.isAdmin) {
+                    client.send(JSON.stringify({
+                        type: 'state',
+                        data: {
+                            isRunning: true,
+                            port: port,
+                            players: stats.onlinePlayers,
+                            rooms: stats.activeRooms,
+                            autostart: false,
+                            firewallStatus: 'ok'
+                        }
+                    }));
+                }
+            });
         }, 2000);
 
         // Boş odaları temizleme

@@ -19,6 +19,9 @@
             <button class="tab-btn active" data-target="dashboard">
                 <span class="icon">📊</span> Genel Bakış
             </button>
+            <button class="tab-btn" data-target="users">
+                <span class="icon">👥</span> Kullanıcılar
+            </button>
             <button class="tab-btn" data-target="network">
                 <span class="icon">🌐</span> Ağ & Bağlantı
             </button>
@@ -85,6 +88,39 @@
                 <p>Cihazınızın kamerasını okutarak anında oyuna katılabilirsiniz.</p>
                 <div class="qr-container">
                     <img id="qr-code" src="" alt="QR Kod">
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="users">
+            <div class="card">
+                <h3>Kayıtlı Kullanıcılar (<span id="total-users-count">0</span>)</h3>
+                <div class="user-management-actions" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="new-username" placeholder="Kullanıcı Adı" class="input-light" style="padding: 8px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;">
+                    <input type="password" id="new-password" placeholder="Şifre" class="input-light" style="padding: 8px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;">
+                    <button id="btn-add-user" class="btn-success" style="padding: 8px 16px;">Ekle</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="users-table" style="width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 15px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #555;">
+                                <th style="padding: 10px;">Kullanıcı Adı</th>
+                                <th style="padding: 10px;">Üye Kodu</th>
+                                <th style="padding: 10px;">Elo</th>
+                                <th style="padding: 10px;">Maç</th>
+                                <th style="padding: 10px;">Son Görülme</th>
+                                <th style="padding: 10px;">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr><td colspan="6" style="text-align: center; padding: 20px;">Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" style="display: flex; justify-content: space-between; align-items: center;">
+                    <button id="btn-prev-page" class="btn-secondary" disabled>Önceki</button>
+                    <span id="page-info">Sayfa 1 / 1</span>
+                    <button id="btn-next-page" class="btn-secondary" disabled>Sonraki</button>
                 </div>
             </div>
         </div>

@@ -1050,6 +1050,13 @@ const Game = (() => {
                     ChallengeUI.handleMessage(data);
                 }
                 break;
+
+            case 'GLOBAL_STATS':
+                const onlineBadge = document.getElementById('global-online-badge');
+                if (onlineBadge && data.stats) {
+                    onlineBadge.textContent = '🟢 Aktif Oyuncu: ' + (data.stats.onlinePlayers || 0);
+                }
+                break;
         }
     }
 

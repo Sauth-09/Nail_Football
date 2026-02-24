@@ -6,6 +6,8 @@
  * Sistem tepsisinde ikon gösterir ve oradan kontrol edilir.
  */
 
+require('dotenv').config();
+
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const path = require('path');
@@ -15,6 +17,12 @@ const QRCode = require('qrcode');
 const fs = require('fs');
 const logger = require('./logger');
 const trayManager = require('./trayManager');
+const { connectDB, isDBConnected } = require('./db');
+const Player = require('./models/Player');
+const bcrypt = require('bcryptjs');
+
+// Connect to DB for admin panel
+connectDB();
 
 const MANAGER_PORT = 3001;
 const GAME_PORT = 3000;
@@ -287,6 +295,63 @@ function handleCommand(data, ws) {
             break;
         case 'openGame':
             exec(`start ${state.networkUrl}`);
+            break;
+        case 'getUsers':
+            (async () => {
+                if (!isDBConnected()) {
+                    ws.send(JSON.stringify({ type: 'usersData', error: 'Veritabanı bağlı değil!' }));
+                    return;
+                }
+                const page = data.page || 1;
+                const limit = 50;
+                const skip = (page - 1) * limit;
+                const totalCount = await Player.countDocuments();
+                const users = await Player.find().sort({ createdAt: -1 }).skip(skip).limit(limit).select('-passwordHash -token').lean();
+                ws.send(JSON.stringify({ type: 'usersData', users, totalCount, page, totalPages: Math.ceil(totalCount / limit) }));
+            })();
+            break;
+        case 'addUser':
+            (async () => {
+                if (!isDBConnected()) return;
+                try {
+                    const existing = await Player.findOne({ username: data.username });
+                    if (existing) {
+                        ws.send(JSON.stringify({ type: 'adminActionError', message: 'Kullanıcı adı zaten var.' }));
+                        return;
+                    }
+                    const token = require('crypto').randomUUID();
+                    const passwordHash = await bcrypt.hash(data.password, 10);
+                    await Player.create({ username: data.username, passwordHash, token });
+                    ws.send(JSON.stringify({ type: 'adminActionSuccess', message: 'Kullanıcı oluşturuldu.' }));
+                    handleCommand({ cmd: 'getUsers', page: 1 }, ws);
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'adminActionError', message: err.message }));
+                }
+            })();
+            break;
+        case 'deleteUser':
+            (async () => {
+                if (!isDBConnected()) return;
+                try {
+                    await Player.findByIdAndDelete(data.userId);
+                    ws.send(JSON.stringify({ type: 'adminActionSuccess', message: 'Kullanıcı silindi.' }));
+                    handleCommand({ cmd: 'getUsers', page: 1 }, ws);
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'adminActionError', message: err.message }));
+                }
+            })();
+            break;
+        case 'changePassword':
+            (async () => {
+                if (!isDBConnected()) return;
+                try {
+                    const passwordHash = await bcrypt.hash(data.newPassword, 10);
+                    await Player.findByIdAndUpdate(data.userId, { passwordHash });
+                    ws.send(JSON.stringify({ type: 'adminActionSuccess', message: 'Şifre değiştirildi.' }));
+                } catch (err) {
+                    ws.send(JSON.stringify({ type: 'adminActionError', message: err.message }));
+                }
+            })();
             break;
     }
 }

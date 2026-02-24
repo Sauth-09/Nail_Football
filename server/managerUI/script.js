@@ -22,6 +22,18 @@ const btnCheckUpdate = document.getElementById('btn-check-update');
 const updateStatus = document.getElementById('update-status');
 const overlay = document.getElementById('overlay');
 
+// User Management DOM
+const usersTableBody = document.getElementById('users-table-body');
+const totalUsersCount = document.getElementById('total-users-count');
+const btnAddUser = document.getElementById('btn-add-user');
+const inputNewUsername = document.getElementById('new-username');
+const inputNewPassword = document.getElementById('new-password');
+const btnPrevPage = document.getElementById('btn-prev-page');
+const btnNextPage = document.getElementById('btn-next-page');
+const pageInfo = document.getElementById('page-info');
+
+let currentPage = 1;
+
 // ═══════════════════════════════════════════
 // WebSocket & Heartbeat
 // ═══════════════════════════════════════════
@@ -49,6 +61,14 @@ ws.onmessage = (event) => {
         appendLog(msg.text, msg.level);
     } else if (msg.type === 'updateStatus') {
         updateStatus.innerHTML = msg.text.replace(/\n/g, '<br>');
+    } else if (msg.type === 'usersData') {
+        renderUsers(msg);
+    } else if (msg.type === 'adminActionSuccess') {
+        alert('Başarılı: ' + msg.message);
+        inputNewUsername.value = '';
+        inputNewPassword.value = '';
+    } else if (msg.type === 'adminActionError') {
+        alert('Hata: ' + msg.message);
     }
 };
 
@@ -137,6 +157,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
         btn.classList.add('active');
         document.getElementById(btn.dataset.target).classList.add('active');
+
+        if (btn.dataset.target === 'users') {
+            loadUsers(1);
+        }
     });
 });
 
@@ -178,3 +202,77 @@ btnCheckUpdate.addEventListener('click', () => {
     updateStatus.textContent = 'Kontrol ediliyor...';
     sendCmd('checkUpdate');
 });
+
+// ═══════════════════════════════════════════
+// User Management Logic
+// ═══════════════════════════════════════════
+
+function loadUsers(page) {
+    currentPage = page;
+    sendCmd('getUsers', { page });
+}
+
+function renderUsers(data) {
+    if (data.error) {
+        usersTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: #ff6b6b;">${data.error}</td></tr>`;
+        return;
+    }
+
+    totalUsersCount.textContent = data.totalCount;
+    pageInfo.textContent = `Sayfa ${data.page} / ${data.totalPages || 1}`;
+    btnPrevPage.disabled = data.page <= 1;
+    btnNextPage.disabled = data.page >= (data.totalPages || 1);
+
+    usersTableBody.innerHTML = '';
+    if (!data.users || data.users.length === 0) {
+        usersTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">Kullanıcı bulunamadı.</td></tr>';
+        return;
+    }
+
+    data.users.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #333';
+        const dateStr = user.lastActive ? new Date(user.lastActive).toLocaleString('tr-TR') : 'Bilinmiyor';
+
+        tr.innerHTML = `
+            <td style="padding: 10px;">${user.username}</td>
+            <td style="padding: 10px;">#${user.memberCode || '----'}</td>
+            <td style="padding: 10px;">${user.rating || 1000}</td>
+            <td style="padding: 10px;">${user.stats ? user.stats.totalMatches : 0}</td>
+            <td style="padding: 10px;">${dateStr}</td>
+            <td style="padding: 10px;">
+                <button class="btn-warning" onclick="changeUserPassword('${user._id}', '${user.username}')" style="padding: 4px 8px; font-size: 0.8em; margin-right: 5px;">Şifre</button>
+                <button class="btn-danger" onclick="deleteUser('${user._id}', '${user.username}')" style="padding: 4px 8px; font-size: 0.8em;">Sil</button>
+            </td>
+        `;
+        usersTableBody.appendChild(tr);
+    });
+}
+
+window.deleteUser = function (userId, username) {
+    if (confirm(`'${username}' adlı kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!`)) {
+        sendCmd('deleteUser', { userId });
+    }
+};
+
+window.changeUserPassword = function (userId, username) {
+    const newPassword = prompt(`'${username}' için yeni şifreyi giriniz (En az 4 karakter):`);
+    if (newPassword !== null) {
+        if (newPassword.length < 4) {
+            alert('Şifre en az 4 karakter olmalıdır!');
+            return;
+        }
+        sendCmd('changePassword', { userId, newPassword });
+    }
+};
+
+btnAddUser.addEventListener('click', () => {
+    const username = inputNewUsername.value.trim();
+    const password = inputNewPassword.value;
+    if (username.length < 2) return alert('Kullanıcı adı en az 2 karakter olmalıdır.');
+    if (password.length < 4) return alert('Şifre en az 4 karakter olmalıdır.');
+    sendCmd('addUser', { username, password });
+});
+
+btnPrevPage.addEventListener('click', () => loadUsers(currentPage - 1));
+btnNextPage.addEventListener('click', () => loadUsers(currentPage + 1));
