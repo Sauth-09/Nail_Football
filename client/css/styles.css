@@ -1072,10 +1072,11 @@ body {
     align-items: center;
     justify-content: center;
     width: 100%;
-    /* Ekranın %100'ünden üst bar boşluğunu ve payı çıkararak sığdırıyoruz */
-    max-height: calc(100vh - 120px);
+    /* Ekranın %100'ünden sadece üst bar boşluğunu ve ufak bir payı çıkarıyoruz */
+    max-height: calc(100vh - 60px);
     overflow: hidden;
     position: relative;
+    z-index: 1;
 }
 
 #game-canvas {
@@ -1092,14 +1093,22 @@ body {
 /* ═══════════════════════════════════════════════ */
 
 .turn-indicator {
-    padding: 8px 20px;
+    position: absolute;
+    top: 15px;
+    /* Canvas container'ın üst kısmına yerleşir */
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 16px;
     background: rgba(22, 33, 62, 0.9);
     text-align: center;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     transition: background 0.3s;
+    z-index: 20;
+    pointer-events: none;
+    white-space: nowrap;
 }
 
 /* ═══════════════════════════════════════════════ */
