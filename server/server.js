@@ -87,6 +87,8 @@ const adminAuth = (req, res, next) => {
 
     // Verify
     if (login && password && login === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        // Set a cookie so the WebSocket can identify authenticated admins
+        res.setHeader('Set-Cookie', 'admin_auth=1; Path=/; Max-Age=86400; HttpOnly');
         return next();
     }
 
@@ -208,11 +210,15 @@ wss.on('connection', (ws, req) => {
         const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
         const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '123456';
 
-        // WS authentication check (Basic Auth headers sent by the browser)
+        // WS authentication check: Support both Basic Auth headers AND Cookie (set by the HTTP route)
+        const cookies = req.headers.cookie || '';
+        const hasAdminCookie = cookies.includes('admin_auth=1');
+
         const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
         const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+        const hasBasicAuth = login === ADMIN_USERNAME && password === ADMIN_PASSWORD;
 
-        if (!login || !password || login !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+        if (!hasAdminCookie && !hasBasicAuth) {
             console.log(`[WARN] Yetkisiz Admin WebSocket bağlantı denemesi: ${clientIp}`);
             ws.send(JSON.stringify({ type: 'log', level: 'error', text: 'Yetkisiz Erişim.' }));
             return ws.close(1008, 'Unauthorized'); // Policy Violation
@@ -230,6 +236,7 @@ wss.on('connection', (ws, req) => {
             type: 'state',
             data: {
                 isRunning: true,
+                isCloud: isProduction,
                 port: currentPort,
                 players: onlineTracker.getOnlineCount(),
                 rooms: gameManager.rooms.size,
@@ -1016,6 +1023,7 @@ function startServer(port) {
                         type: 'state',
                         data: {
                             isRunning: true,
+                            isCloud: isProduction,
                             port: port,
                             players: stats.onlinePlayers,
                             rooms: stats.activeRooms,

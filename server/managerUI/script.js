@@ -63,10 +63,22 @@ function sendCmd(cmd, payload = {}) {
 // ═══════════════════════════════════════════
 
 function updateUI(state) {
+    // Cloud Mode Adjustments
+    if (state.isCloud) {
+        btnStart.style.display = 'none';
+        btnStop.style.display = 'none';
+        btnRestart.style.display = 'none';
+        btnKillManager.style.display = 'none';
+
+        // Settings to hide in cloud
+        const autostartContainer = settingAutostart.closest('.setting-item');
+        if (autostartContainer) autostartContainer.style.display = 'none';
+    }
+
     // Server Status
     if (state.isRunning) {
         statusDot.className = 'dot true';
-        statusText.textContent = 'Sunucu Çalışıyor (' + state.port + ')';
+        statusText.textContent = state.isCloud ? 'Bulut Sunucusu Aktif' : 'Sunucu Çalışıyor (' + state.port + ')';
         statusText.style.color = '#22c55e';
         btnStart.disabled = true;
         btnStop.disabled = false;
@@ -155,6 +167,24 @@ btnKillManager.addEventListener('click', () => {
         window.close();
     }
 });
+
+const btnLogout = document.getElementById('btn-logout');
+if (btnLogout) {
+    btnLogout.addEventListener('click', () => {
+        if (confirm('Oturumu kapatmak istediğinize emin misiniz?')) {
+            // Clear our admin_auth cookie
+            document.cookie = 'admin_auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+            // Trigger a 401 response by reloading to a page that requires auth
+            // This is the cleanest way to clear Basic Auth in many browsers
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", "/admin", true, "logout", "logout");
+            xhr.send();
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        }
+    });
+}
 
 btnFixFirewall.addEventListener('click', () => {
     btnFixFirewall.disabled = true;
