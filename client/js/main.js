@@ -110,6 +110,11 @@ const Game = (() => {
         if (typeof LeaderboardUI !== 'undefined') LeaderboardUI.init();
         if (typeof TournamentUI !== 'undefined') TournamentUI.init();
 
+        // Connect to server immediately to trigger auto-login and online tracking
+        if (typeof NetworkManager !== 'undefined') {
+            NetworkManager.connect();
+        }
+
         console.log('[INFO] Çivi Futbolu hazır!');
     }
 
