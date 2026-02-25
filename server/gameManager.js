@@ -106,7 +106,7 @@ class GameManager {
      * @param {Object} challengeData - Challenge settings
      */
     createChallengeRoom(code, challengeData) {
-        const fieldConfig = getFieldById(challengeData.fieldId || 'classic');
+        const fieldConfig = getFieldById(challengeData.fieldId || 'classic_442');
 
         const room = {
             code: code,
@@ -115,7 +115,7 @@ class GameManager {
             state: 'waiting_challenge',
             fieldConfig: fieldConfig,
             settings: {
-                fieldId: challengeData.fieldId || 'classic',
+                fieldId: challengeData.fieldId || 'classic_442',
                 goalLimit: challengeData.goalLimit || 3,
                 goalkeeperEnabled: challengeData.goalkeeperEnabled || false,
                 goalkeeperSize: challengeData.goalkeeperSize || 30

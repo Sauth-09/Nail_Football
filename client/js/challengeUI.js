@@ -70,8 +70,8 @@ const ChallengeUI = (() => {
         if (!screen) return;
 
         const fieldNames = {
-            'classic': 'Klasik', 'zigzag': 'Zigzag', 'diamond': 'Elmas',
-            'spiral': 'Spiral', 'chaotic': 'Kaotik', 'castle': 'Kale',
+            'classic_442': 'Klasik 4-4-2', 'labyrinth': 'Labirent', 'diamond': 'Elmas',
+            'open_field': 'Boş Alan', 'crowded': 'Kalabalık', 'spiral': 'Spiral',
             'random': 'Rastgele'
         };
 
@@ -125,8 +125,8 @@ const ChallengeUI = (() => {
 
         const player = AuthManager.getPlayer();
         const fieldNames = {
-            'classic': 'Klasik', 'zigzag': 'Zigzag', 'diamond': 'Elmas',
-            'spiral': 'Spiral', 'chaotic': 'Kaotik', 'castle': 'Kale',
+            'classic_442': 'Klasik 4-4-2', 'labyrinth': 'Labirent', 'diamond': 'Elmas',
+            'open_field': 'Boş Alan', 'crowded': 'Kalabalık', 'spiral': 'Spiral',
             'random': 'Rastgele'
         };
 
