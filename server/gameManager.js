@@ -106,7 +106,21 @@ class GameManager {
      * @param {Object} challengeData - Challenge settings
      */
     createChallengeRoom(code, challengeData) {
-        const fieldConfig = getFieldById(challengeData.fieldId || 'classic_442');
+        console.log(`[CHALLENGE-ROOM] Creating room ${code} with fieldId: '${challengeData.fieldId}'`);
+        let fieldConfig = getFieldById(challengeData.fieldId || 'classic_442');
+
+        // Fallback: if fieldId is invalid, use classic_442
+        if (!fieldConfig) {
+            console.warn(`[CHALLENGE-ROOM] getFieldById('${challengeData.fieldId}') returned null! Falling back to classic_442`);
+            fieldConfig = getFieldById('classic_442');
+        }
+
+        if (!fieldConfig) {
+            console.error(`[CHALLENGE-ROOM] CRITICAL: Even classic_442 returned null!`);
+            return null;
+        }
+
+        console.log(`[CHALLENGE-ROOM] fieldConfig loaded: ${fieldConfig.id}, ${fieldConfig.fieldWidth}x${fieldConfig.fieldHeight}`);
 
         const room = {
             code: code,
@@ -176,8 +190,14 @@ class GameManager {
                     room.timeoutTimer = null;
                 }
 
+                // Safety check: ensure fieldConfig exists
+                if (!room.fieldConfig) {
+                    console.error(`[CHALLENGE-ROOM] fieldConfig is NULL for room ${roomCode}! Cannot start game.`);
+                    return { type: 'ERROR', message: 'Saha verisi yüklenemedi!' };
+                }
+
                 room.state = 'playing';
-                console.log(`[INFO] Challenge oyunu başlıyor: ${roomCode}`);
+                console.log(`[INFO] Challenge oyunu başlıyor: ${roomCode}, fieldId: ${room.settings.fieldId}`);
 
                 // First simulate FIELD_SELECTED so clients set up their field properly
                 this.broadcastToRoom(room, {
