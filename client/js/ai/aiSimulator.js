@@ -72,8 +72,9 @@ class AISimulator {
         const gkWidth = 12;
         const gkHeight = options.goalkeeperSize || 30;
         const gkBaseY = this.field.fieldHeight / 2;
-        const gkLeftX = 70;
-        const gkRightX = this.field.fieldWidth - 70;
+        // Goalkeeper positioned close to goal line (synced with physics engine)
+        const gkLeftX = this.field.goalDepth + 12;
+        const gkRightX = this.field.fieldWidth - this.field.goalDepth - 12;
 
         const shotStartTime = options.shotStartTime || 0;
         const isGkEnabled = options.goalkeeperEnabled === true;
@@ -118,13 +119,49 @@ class AISimulator {
 
             if (hitWall) wallHitCount++;
 
-            // Gol Kontrolü
-            if (ball.x < this.field.goalDepth && ball.y > goalTop && ball.y < goalBottom) {
+            // Goal post collision (U-shaped goal walls)
+            // Left goal posts
+            if (ball.x - ball.radius < this.field.goalDepth) {
+                if (ball.y - ball.radius < goalTop && ball.y + ball.radius > goalTop && ball.x < this.field.goalDepth) {
+                    if (ball.vy > 0) {
+                        ball.y = goalTop - ball.radius;
+                        ball.vy = -ball.vy * this.field.wallRestitution;
+                        wallHitCount++;
+                    }
+                }
+                if (ball.y + ball.radius > goalBottom && ball.y - ball.radius < goalBottom && ball.x < this.field.goalDepth) {
+                    if (ball.vy < 0) {
+                        ball.y = goalBottom + ball.radius;
+                        ball.vy = -ball.vy * this.field.wallRestitution;
+                        wallHitCount++;
+                    }
+                }
+            }
+            // Right goal posts
+            if (ball.x + ball.radius > this.field.fieldWidth - this.field.goalDepth) {
+                if (ball.y - ball.radius < goalTop && ball.y + ball.radius > goalTop && ball.x > this.field.fieldWidth - this.field.goalDepth) {
+                    if (ball.vy > 0) {
+                        ball.y = goalTop - ball.radius;
+                        ball.vy = -ball.vy * this.field.wallRestitution;
+                        wallHitCount++;
+                    }
+                }
+                if (ball.y + ball.radius > goalBottom && ball.y - ball.radius < goalBottom && ball.x > this.field.fieldWidth - this.field.goalDepth) {
+                    if (ball.vy < 0) {
+                        ball.y = goalBottom + ball.radius;
+                        ball.vy = -ball.vy * this.field.wallRestitution;
+                        wallHitCount++;
+                    }
+                }
+            }
+
+            // Goal detection - ball must enter the U-shaped goal from the front
+            if (ball.x <= ball.radius && ball.y > goalTop && ball.y < goalBottom) {
                 isGoal = true;
                 goalSide = 'left';
                 break;
             }
-            if (ball.x > this.field.fieldWidth - this.field.goalDepth && ball.y > goalTop && ball.y < goalBottom) {
+            if (ball.x >= this.field.fieldWidth - ball.radius && ball.y > goalTop && ball.y < goalBottom) {
                 isGoal = true;
                 goalSide = 'right';
                 break;
@@ -166,22 +203,31 @@ class AISimulator {
                 const gks = [gkLeft, gkRight];
                 for (const gk of gks) {
                     if (this.checkGoalkeeperCollision(ball, gk)) {
-                        const dx = ball.x - gk.x;
-                        const dy = ball.y - gk.y;
+                        // Find the closest point on the goalkeeper AABB to the ball
+                        const halfW = gk.width / 2;
+                        const halfH = gk.height / 2;
+                        let closestX = Math.max(gk.x - halfW, Math.min(ball.x, gk.x + halfW));
+                        let closestY = Math.max(gk.y - halfH, Math.min(ball.y, gk.y + halfH));
+
+                        const dx = ball.x - closestX;
+                        const dy = ball.y - closestY;
                         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
                         const nx = dx / dist;
                         const ny = dy / dist;
 
+                        // Use high restitution so goalkeeper bounces ball firmly
+                        const gkRestitution = 0.95;
                         const dvn = ball.vx * nx + ball.vy * ny;
                         if (dvn < 0) {
-                            ball.vx -= (1 + this.field.wallRestitution) * dvn * nx;
-                            ball.vy -= (1 + this.field.wallRestitution) * dvn * ny;
+                            ball.vx -= (1 + gkRestitution) * dvn * nx;
+                            ball.vy -= (1 + gkRestitution) * dvn * ny;
                         }
 
+                        // Correct penetration - push ball outside goalkeeper
                         const overlap = ball.radius - dist;
                         if (overlap > 0) {
-                            ball.x += nx * overlap;
-                            ball.y += ny * overlap;
+                            ball.x += nx * (overlap + 1);
+                            ball.y += ny * (overlap + 1);
                         }
                     }
                 }

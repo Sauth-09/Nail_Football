@@ -236,25 +236,34 @@ const PhysicsClient = (() => {
                 const gks = [gkLeft, gkRight];
                 for (const gk of gks) {
                     if (checkGoalkeeperCollision(ball, gk)) {
-                        // Reflect ball simply
-                        const dx = ball.x - gk.x;
-                        const dy = ball.y - gk.y;
+                        // Find the closest point on the goalkeeper AABB to the ball
+                        const halfW = gk.width / 2;
+                        const halfH = gk.height / 2;
+                        let closestX = Math.max(gk.x - halfW, Math.min(ball.x, gk.x + halfW));
+                        let closestY = Math.max(gk.y - halfH, Math.min(ball.y, gk.y + halfH));
+
+                        const dx = ball.x - closestX;
+                        const dy = ball.y - closestY;
                         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
                         const nx = dx / dist;
                         const ny = dy / dist;
 
+                        // Use high restitution so goalkeeper bounces ball firmly (like a nail)
+                        const gkRestitution = 0.95;
                         const dvn = ball.vx * nx + ball.vy * ny;
                         if (dvn < 0) {
-                            ball.vx -= (1 + field.wallRestitution) * dvn * nx;
-                            ball.vy -= (1 + field.wallRestitution) * dvn * ny;
+                            ball.vx -= (1 + gkRestitution) * dvn * nx;
+                            ball.vy -= (1 + gkRestitution) * dvn * ny;
                         }
 
-                        // Push out
-                        const overlap = ball.radius - dist; // simple approximation
+                        // Correct penetration - push ball outside goalkeeper
+                        const overlap = ball.radius - dist;
                         if (overlap > 0) {
-                            ball.x += nx * overlap;
-                            ball.y += ny * overlap;
+                            ball.x += nx * (overlap + 1);
+                            ball.y += ny * (overlap + 1);
                         }
+
+                        console.log(`[PHYSICS-C] Goalkeeper collision! Ball at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
 
                         collisionEvents.push({
                             type: 'goalkeeper',

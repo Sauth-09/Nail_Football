@@ -90,6 +90,11 @@ app.use(express.static(path.join(__dirname, '..', 'client'), {
     }
 }));
 
+// Health check endpoint for uptime monitoring (e.g., Render)
+app.get('/ping', (req, res) => {
+    res.status(200).send('OK');
+});
+
 // API: Get all field configs (for field selection)
 app.get('/api/fields', (req, res) => {
     res.json(getAllFields());
