@@ -113,8 +113,9 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
     const gkWidth = 12;
     const gkHeight = options.goalkeeperSize || 30;
     const gkBaseY = fieldHeight / 2;
-    const gkLeftX = 70;
-    const gkRightX = fieldWidth - 70;
+    // Goalkeeper positioned close to goal line (goalDepth + half width + small padding)
+    const gkLeftX = goalDepth + 12;
+    const gkRightX = fieldWidth - goalDepth - 12;
 
     const shotStartTime = options.shotStartTime || 0;
     const isGkEnabled = options.goalkeeperEnabled === true;
@@ -157,16 +158,62 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
             }
         }
 
-        // Step 3: Goal detection - returns which SIDE
+        // Step 2.5: Goal post collision (U-shaped goal walls)
+        // Left goal posts - top and bottom horizontal bars
+        if (ball.x - ball.radius < goalDepth) {
+            // Top post of left goal
+            if (ball.y - ball.radius < goalTop && ball.y + ball.radius > goalTop && ball.x < goalDepth) {
+                if (ball.vy > 0) {
+                    // Ball coming from above, bounce up
+                    ball.y = goalTop - ball.radius;
+                    ball.vy = -ball.vy * wallRestitution;
+                    console.log(`[PHYSICS] Left goal TOP post collision at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
+                }
+            }
+            // Bottom post of left goal
+            if (ball.y + ball.radius > goalBottom && ball.y - ball.radius < goalBottom && ball.x < goalDepth) {
+                if (ball.vy < 0) {
+                    // Ball coming from below, bounce down
+                    ball.y = goalBottom + ball.radius;
+                    ball.vy = -ball.vy * wallRestitution;
+                    console.log(`[PHYSICS] Left goal BOTTOM post collision at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
+                }
+            }
+        }
+
+        // Right goal posts - top and bottom horizontal bars
+        if (ball.x + ball.radius > fieldWidth - goalDepth) {
+            // Top post of right goal
+            if (ball.y - ball.radius < goalTop && ball.y + ball.radius > goalTop && ball.x > fieldWidth - goalDepth) {
+                if (ball.vy > 0) {
+                    ball.y = goalTop - ball.radius;
+                    ball.vy = -ball.vy * wallRestitution;
+                    console.log(`[PHYSICS] Right goal TOP post collision at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
+                }
+            }
+            // Bottom post of right goal
+            if (ball.y + ball.radius > goalBottom && ball.y - ball.radius < goalBottom && ball.x > fieldWidth - goalDepth) {
+                if (ball.vy < 0) {
+                    ball.y = goalBottom + ball.radius;
+                    ball.vy = -ball.vy * wallRestitution;
+                    console.log(`[PHYSICS] Right goal BOTTOM post collision at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
+                }
+            }
+        }
+
+        // Step 3: Goal detection - ball must enter the U-shaped goal from the front
         // P1 defends LEFT goal, P2 defends RIGHT goal
-        // Left goal
-        if (ball.x < goalDepth && ball.y > goalTop && ball.y < goalBottom) {
+        // Ball must be inside the goal area AND between the posts
+        // Left goal - ball center past the goal line (x=0), between posts
+        if (ball.x <= ball.radius && ball.y > goalTop && ball.y < goalBottom) {
+            console.log(`[PHYSICS] GOAL! Left side at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)}) | goalTop=${goalTop}, goalBottom=${goalBottom}`);
             goalScored = { side: 'left' };
             trajectory.push({ x: ball.x, y: ball.y, t: frame * PHYSICS_DT * 1000 });
             break;
         }
-        // Right goal
-        if (ball.x > fieldWidth - goalDepth && ball.y > goalTop && ball.y < goalBottom) {
+        // Right goal - ball center past the goal line (x=fieldWidth), between posts
+        if (ball.x >= fieldWidth - ball.radius && ball.y > goalTop && ball.y < goalBottom) {
+            console.log(`[PHYSICS] GOAL! Right side at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)}) | goalTop=${goalTop}, goalBottom=${goalBottom}`);
             goalScored = { side: 'right' };
             trajectory.push({ x: ball.x, y: ball.y, t: frame * PHYSICS_DT * 1000 });
             break;

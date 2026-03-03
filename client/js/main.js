@@ -844,10 +844,20 @@ const Game = (() => {
             case 'FIELD_SELECTED':
                 if (data.fieldData) {
                     currentField = data.fieldData;
+                    console.log(`[MAIN] FIELD_SELECTED received - fieldId: ${data.fieldId}, fieldWidth: ${data.fieldData.fieldWidth}`);
+                } else {
+                    console.warn('[MAIN] FIELD_SELECTED received but fieldData is null/undefined!');
                 }
                 break;
 
             case 'GAME_START':
+                console.log(`[MAIN] GAME_START received - currentField: ${currentField ? 'SET' : 'NULL'}, hasFieldData: ${!!data.fieldData}`);
+                // Ensure currentField is set (FIELD_SELECTED should have arrived first)
+                if (!currentField && data.fieldData) {
+                    // Fallback: use fieldData from GAME_START if FIELD_SELECTED was missed
+                    currentField = data.fieldData;
+                    console.log('[MAIN] currentField was null, using fallback from GAME_START');
+                }
                 if (currentField) {
                     scores = data.initialState.scores;
                     currentPlayer = data.initialState.currentPlayer;

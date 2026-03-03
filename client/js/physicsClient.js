@@ -94,8 +94,9 @@ const PhysicsClient = (() => {
         const gkWidth = 12;
         const gkHeight = options.goalkeeperSize || 30;
         const gkBaseY = field.fieldHeight / 2;
-        const gkLeftX = 70;
-        const gkRightX = field.fieldWidth - 70;
+        // Goalkeeper positioned close to goal line (goalDepth + half width + small padding)
+        const gkLeftX = field.goalDepth + 12;
+        const gkRightX = field.fieldWidth - field.goalDepth - 12;
 
         // shotStartTime defaults to 0 if not provided
         const shotStartTime = options.shotStartTime || 0;
@@ -136,12 +137,59 @@ const PhysicsClient = (() => {
 
             // Goal detection - returns which SIDE the goal is in
             // P1 defends LEFT goal, P2 defends RIGHT goal
-            if (ball.x < field.goalDepth && ball.y > goalTop && ball.y < goalBottom) {
+
+            // Step 2.5: Goal post collision (U-shaped goal walls)
+            // Left goal posts - top and bottom horizontal bars
+            if (ball.x - ball.radius < field.goalDepth) {
+                // Top post of left goal
+                if (ball.y - ball.radius < goalTop && ball.y + ball.radius > goalTop && ball.x < field.goalDepth) {
+                    if (ball.vy > 0) {
+                        ball.y = goalTop - ball.radius;
+                        ball.vy = -ball.vy * field.wallRestitution;
+                        console.log(`[PHYSICS-C] Left goal TOP post collision at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
+                        collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
+                    }
+                }
+                // Bottom post of left goal
+                if (ball.y + ball.radius > goalBottom && ball.y - ball.radius < goalBottom && ball.x < field.goalDepth) {
+                    if (ball.vy < 0) {
+                        ball.y = goalBottom + ball.radius;
+                        ball.vy = -ball.vy * field.wallRestitution;
+                        console.log(`[PHYSICS-C] Left goal BOTTOM post collision at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
+                        collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
+                    }
+                }
+            }
+
+            // Right goal posts - top and bottom horizontal bars
+            if (ball.x + ball.radius > field.fieldWidth - field.goalDepth) {
+                // Top post of right goal
+                if (ball.y - ball.radius < goalTop && ball.y + ball.radius > goalTop && ball.x > field.fieldWidth - field.goalDepth) {
+                    if (ball.vy > 0) {
+                        ball.y = goalTop - ball.radius;
+                        ball.vy = -ball.vy * field.wallRestitution;
+                        collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
+                    }
+                }
+                // Bottom post of right goal
+                if (ball.y + ball.radius > goalBottom && ball.y - ball.radius < goalBottom && ball.x > field.fieldWidth - field.goalDepth) {
+                    if (ball.vy < 0) {
+                        ball.y = goalBottom + ball.radius;
+                        ball.vy = -ball.vy * field.wallRestitution;
+                        collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
+                    }
+                }
+            }
+
+            // Goal detection - ball must enter the U-shaped goal from the front
+            if (ball.x <= ball.radius && ball.y > goalTop && ball.y < goalBottom) {
+                console.log(`[PHYSICS-C] GOAL! Left side at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
                 goalScored = { side: 'left' };  // Sol kaleye gol
                 trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000 });
                 break;
             }
-            if (ball.x > field.fieldWidth - field.goalDepth && ball.y > goalTop && ball.y < goalBottom) {
+            if (ball.x >= field.fieldWidth - ball.radius && ball.y > goalTop && ball.y < goalBottom) {
+                console.log(`[PHYSICS-C] GOAL! Right side at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
                 goalScored = { side: 'right' }; // Sağ kaleye gol
                 trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000 });
                 break;

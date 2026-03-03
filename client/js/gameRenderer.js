@@ -199,8 +199,9 @@ const GameRenderer = (() => {
             let t = Date.now();
 
             const gkBaseY = field.fieldHeight / 2;
-            const gkLeftX = 70;
-            const gkRightX = field.fieldWidth - 70;
+            // Goalkeeper positioned close to goal line (synced with physics engine)
+            const gkLeftX = field.goalDepth + 12;
+            const gkRightX = field.fieldWidth - field.goalDepth - 12;
             const gkWidth = 12;
             const gkHeight = (typeof UIManager !== 'undefined' ? UIManager.getSettings().goalkeeperSize : 30) || 30;
 

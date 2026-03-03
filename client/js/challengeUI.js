@@ -173,20 +173,31 @@ const ChallengeUI = (() => {
      * Challenge oyununu başlat
      */
     function startChallengeGame(data) {
+        console.log(`[CHALLENGE-UI] startChallengeGame called with roomCode: ${data.roomCode}`);
         const screen = document.getElementById('challenge-vs-screen');
         if (screen) screen.classList.remove('active');
 
-        // Oyun modunu ayarla ve başlat
+        // Show a loading state while waiting for server to start the game
+        // This prevents black screen between VS screen and game screen
+        if (typeof UIManager !== 'undefined') {
+            UIManager.showScreen('lobby-screen');
+            UIManager.setLobbyStatus('Oyun başlatılıyor...', 'waiting');
+            console.log('[CHALLENGE-UI] Lobby screen shown as loading state');
+        }
+
+        // Set game mode and join room
         if (typeof Game !== 'undefined') {
             Game.setMode('multiplayer');
+            console.log('[CHALLENGE-UI] Game mode set to multiplayer');
 
-            // Oda oluştur/katıl simülasyonu - aslında server zaten odayı oluşturdu
-            // Client'ın bu odaya katılması gerekecek
             const player = AuthManager.getPlayer();
             const playerName = player ? player.username : 'Oyuncu';
 
-            // Direkt oda koduna katıl
+            // Join the challenge room - server will send FIELD_SELECTED + GAME_START
+            console.log(`[CHALLENGE-UI] Joining room ${data.roomCode} as ${playerName}`);
             NetworkManager.joinRoom(data.roomCode, playerName);
+        } else {
+            console.error('[CHALLENGE-UI] Game object not found!');
         }
     }
 

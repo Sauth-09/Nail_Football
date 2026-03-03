@@ -186,9 +186,10 @@ class GameManager {
                     fieldData: room.fieldConfig
                 });
 
-                // Then immediately simulate GAME_START
+                // Then immediately simulate GAME_START (include fieldData as fallback)
                 const startData = {
                     type: 'GAME_START',
+                    fieldData: room.fieldConfig,
                     initialState: {
                         ballPosition: { ...room.fieldConfig.ballStartPosition },
                         scores: [0, 0],
@@ -320,6 +321,7 @@ class GameManager {
 
         const startData = {
             type: 'GAME_START',
+            fieldData: room.fieldConfig,
             initialState: {
                 ballPosition: { ...room.fieldConfig.ballStartPosition },
                 scores: [0, 0],
