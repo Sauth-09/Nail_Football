@@ -42,7 +42,7 @@ function init(config) {
         checked: false,
         enabled: true,
         click: () => {
-            const url = config.gameUrl || `http://localhost:3000`;
+            const url = systray.itemOpenGameUrl || config.gameUrl || `http://localhost:3000`;
             logger.log('info', `Oyun açılıyor: ${url}`);
             exec(`start ${url}`);
         }
@@ -110,4 +110,13 @@ function shutdown() {
     }
 }
 
-module.exports = { init, shutdown };
+/**
+ * Updates the game URL dynamically
+ */
+function updateGameUrl(url) {
+    if (systray) {
+        systray.itemOpenGameUrl = url;
+    }
+}
+
+module.exports = { init, shutdown, updateGameUrl };

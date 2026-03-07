@@ -165,27 +165,41 @@ const SoundManager = (() => {
     }
 
     /**
-     * Plays the commentator "GOOOL!" sound using Web Speech API
+     * Plays the commentator "GOOOL!" sound
+     * Only plays if user has added a goal.mp3 file
      */
-    function playCommentatorGoal() {
-        if (!sfxEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
+    async function playCommentatorGoal() {
+        if (!audioContext || !sfxEnabled) return;
         resume();
 
-        // Use Speech Synthesis for a realistic commentator voice
-        const msg = new SpeechSynthesisUtterance('Gooooooooooool!');
-        msg.lang = 'tr-TR';
-        msg.rate = 0.85; // Slightly slower for emphasis
-        msg.pitch = 1.3; // Higher pitch for excitement
-        msg.volume = 1.0;
-
-        // Try to find a Turkish voice
-        const voices = window.speechSynthesis.getVoices();
-        const trVoice = voices.find(v => v.lang.includes('tr'));
-        if (trVoice) {
-            msg.voice = trVoice;
+        try {
+            // Play a real human sound if the user added it
+            const response = await fetch('/assets/sounds/goal.mp3');
+            if (response.ok) {
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(masterGain);
+                source.start(0);
+            }
+        } catch (e) {
+            // No external sound file — stay silent
         }
+    }
 
-        window.speechSynthesis.speak(msg);
+    /**
+     * Internal helper to load an audio buffer
+     */
+    async function loadAudioBuffer(url) {
+        if (!audioContext) return null;
+        try {
+            const response = await fetch(url);
+            const arrayBuffer = await response.arrayBuffer();
+            return await audioContext.decodeAudioData(arrayBuffer);
+        } catch (e) {
+            return null;
+        }
     }
 
     /**

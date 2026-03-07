@@ -33,15 +33,24 @@ const inputNewUsername = document.getElementById('new-username');
 const inputNewPassword = document.getElementById('new-password');
 let currentPage = 1;
 
+let connectTimeout = null;
+
 function connectWebSocket() {
-    ws = new WebSocket(`${wsProtocol}//${location.host}/admin/manager-ws`);
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        return;
+    }
+
+    // manager.js serves this file on its port, so location.host holds the correct dynamic port (e.g. 3029)
+    ws = new WebSocket(`${wsProtocol}//${location.host}/manager-ws`);
 
     ws.onopen = () => {
         console.log('Manager WS Connected');
         overlay.classList.add('hidden'); // Hide connecting/lost connection overlay
-
-        // Start heartbeat
+        
+        // Clear old intervals
         if (pingInterval) clearInterval(pingInterval);
+        
+        // Start heartbeat
         pingInterval = setInterval(() => {
             if (ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'ping' }));
@@ -49,16 +58,21 @@ function connectWebSocket() {
         }, 1000); // 1-second ping to keep manager alive
 
         // Load initial data for current tab
-        if (currentPage === 1) loadUsers(1);
+        if (currentPage === 1) setTimeout(() => sendCmd('getUsers', { page: currentPage }), 500);
     };
 
     ws.onclose = () => {
         console.log('Manager WS Disconnected. Attempting to reconnect...');
         overlay.classList.remove('hidden'); // Show lost connection overlay
-        if (pingInterval) clearInterval(pingInterval);
+        
+        if (pingInterval) {
+            clearInterval(pingInterval);
+            pingInterval = null;
+        }
 
         // Try to reconnect every 3 seconds
-        setTimeout(connectWebSocket, 3000);
+        if (connectTimeout) clearTimeout(connectTimeout);
+        connectTimeout = setTimeout(connectWebSocket, 3000);
     };
 
     ws.onmessage = (event) => {

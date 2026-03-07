@@ -1165,6 +1165,8 @@ const UIManager = (() => {
             'setting-friction': settings.friction,
             'setting-arrow-length': settings.arrowLength,
             'setting-theme': settings.theme,
+            'setting-ball-theme': settings.ballTheme || 'classic',
+            'setting-nail-theme': settings.nailTheme || 'metal',
             'setting-particles': settings.particles ? '1' : '0',
             'setting-volume': settings.volume,
             'setting-sfx': settings.sfx ? '1' : '0',
@@ -1174,6 +1176,19 @@ const UIManager = (() => {
         for (const [id, value] of Object.entries(els)) {
             const el = document.getElementById(id);
             if (el && value !== undefined) el.value = value;
+        }
+
+        // Sync field select dropdowns as well
+        const fieldBallTheme = document.getElementById('field-ball-theme');
+        const fieldNailTheme = document.getElementById('field-nail-theme');
+        if (fieldBallTheme) fieldBallTheme.value = settings.ballTheme || 'classic';
+        if (fieldNailTheme) fieldNailTheme.value = settings.nailTheme || 'metal';
+
+        // Apply to Renderer
+        if (typeof FieldRenderer !== 'undefined') {
+            FieldRenderer.setBallTheme(settings.ballTheme || 'classic');
+            FieldRenderer.setNailTheme(settings.nailTheme || 'metal');
+            FieldRenderer.setTheme(settings.theme || 'grass');
         }
 
         const gkToggle = document.getElementById('gk-toggle');

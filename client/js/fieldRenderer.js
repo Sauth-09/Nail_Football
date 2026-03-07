@@ -395,15 +395,27 @@ const FieldRenderer = (() => {
         const r = br * pulseScale;
         const ballTheme = BALL_THEMES[currentBallTheme] || BALL_THEMES.classic;
 
-        // Player color baz alınarak açık/koyu tonlar oluşturulur
-        const lightColor = playerColor ? adjustBrightness(playerColor, 60) : ballTheme.light;
-        const midColor = playerColor ? adjustBrightness(playerColor, 20) : ballTheme.mid;
-        const darkColor = playerColor ? adjustBrightness(playerColor, -40) : ballTheme.dark;
+        // Color priority: theme colors for non-classic themes, player color for classic
+        const isClassic = (currentBallTheme === 'classic');
+        let lightColor, midColor, darkColor;
         
-        // Tema efektleri her zaman korunur (örneğin Alev glowBlur: 18, Neon: 20)
+        if (isClassic && playerColor) {
+            // Classic theme: use player color as the base
+            lightColor = adjustBrightness(playerColor, 60);
+            midColor = adjustBrightness(playerColor, 20);
+            darkColor = adjustBrightness(playerColor, -40);
+        } else {
+            // Themed ball: always use theme's own colors
+            lightColor = ballTheme.light;
+            midColor = ballTheme.mid;
+            darkColor = ballTheme.dark;
+        }
+        
+        // Theme effects are always preserved (e.g. Fire glowBlur: 18, Neon: 20)
         const patternColor = ballTheme.patternColor;
-        const glowCol = (ballTheme.glowBlur > 0) ? (playerColor || ballTheme.glowColor) : null;
-        const glowBlur = ballTheme.glowBlur;
+        // Glow uses player color when available, otherwise theme glow color
+        const glowCol = (ballTheme.glowBlur > 0) ? (playerColor || ballTheme.glowColor) : (playerColor ? playerColor : null);
+        const glowBlur = (ballTheme.glowBlur > 0) ? ballTheme.glowBlur : (playerColor ? 8 : 0);
 
         // Ball shadow
         ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
@@ -416,14 +428,18 @@ const FieldRenderer = (() => {
             ctx.save();
             ctx.shadowColor = glowCol;
             ctx.shadowBlur = glowBlur;
-            ctx.fillStyle = 'rgba(0,0,0,0)';
+            // Use a very faint version of the glow color instead of pure transparent
+            // to ensure the shadow/glow is rendered by the browser
+            ctx.fillStyle = playerColor || glowCol;
+            ctx.globalAlpha = 0.2; 
             ctx.beginPath();
-            ctx.arc(bx, by, r, 0, Math.PI * 2);
+            ctx.arc(bx, by, r * 0.9, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
         }
 
         // Ball body
+        ctx.save();
         const gradient = ctx.createRadialGradient(
             bx - r * 0.2, by - r * 0.3, r * 0.1,
             bx, by, r
@@ -436,17 +452,32 @@ const FieldRenderer = (() => {
         ctx.beginPath();
         ctx.arc(bx, by, r, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
 
-        // Ball pattern (simple pentagon pattern)
+        // Ball pattern
         ctx.strokeStyle = patternColor;
-        ctx.lineWidth = 0.5;
-        for (let i = 0; i < 5; i++) {
-            const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
-            const px = bx + Math.cos(angle) * r * 0.55;
-            const py = by + Math.sin(angle) * r * 0.55;
+        ctx.lineWidth = 0.8;
+        if (currentBallTheme === 'fire') {
+            // Flame-like effects for fire theme
             ctx.beginPath();
-            ctx.arc(px, py, r * 0.2, 0, Math.PI * 2);
+            for (let i = 0; i < 4; i++) {
+                const angle = (i / 4) * Math.PI * 2 + (Date.now() / 150);
+                const ox = Math.cos(angle) * r * 0.4;
+                const oy = Math.sin(angle) * r * 0.4;
+                ctx.moveTo(bx + ox, by + oy);
+                ctx.lineTo(bx + ox * 1.6, by + oy * 1.6);
+            }
             ctx.stroke();
+        } else {
+            // Default pentagon-like pattern for other themes
+            for (let i = 0; i < 5; i++) {
+                const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+                const px = bx + Math.cos(angle) * r * 0.55;
+                const py = by + Math.sin(angle) * r * 0.55;
+                ctx.beginPath();
+                ctx.arc(px, py, r * 0.2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
         }
 
         // Highlight

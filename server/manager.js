@@ -150,31 +150,38 @@ function startGameServer() {
 
     gameProcess.stdout.on('data', (data) => {
         const text = data.toString();
-        // Check for stats
-        const statsMatch = text.match(/\[STATS\] (.*)/);
-        const portMatch = text.match(/\[INFO\] Oyun sunucusu baslatildi \(Port: (\d+)\)/);
-        
-        if (portMatch) {
-            state.port = parseInt(portMatch[1]);
-            state.networkUrl = `http://${getLocalIP()}:${state.port}`;
-            QRCode.toDataURL(state.networkUrl).then(qr => state.qrCodeData = qr).catch(()=>{});
-            broadcastState();
-        }
-        
-        if (statsMatch) {
-            try {
-                const s = JSON.parse(statsMatch[1]);
-                state.players = s.players || 0;
-                state.rooms = s.rooms || 0;
+        const lines = text.split('\n');
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            const statsMatch = trimmed.match(/\[STATS\] (.*)/);
+            const portMatch = trimmed.match(/\[INFO\] Oyun sunucusu baslatildi \(Port: (\d+)\)/);
+            
+            if (portMatch) {
+                state.port = parseInt(portMatch[1]);
+                state.networkUrl = `http://${getLocalIP()}:${state.port}`;
+                QRCode.toDataURL(state.networkUrl).then(qr => state.qrCodeData = qr).catch(()=>{});
+                
+                // Update Tray Menu with the correct port dynamically
+                trayManager.updateGameUrl(state.networkUrl);
+                
                 broadcastState();
-            } catch (e) { }
-        } else {
-            const trimmed = text.trim();
-            if (trimmed) {
+            }
+            
+            if (statsMatch) {
+                try {
+                    const s = JSON.parse(statsMatch[1]);
+                    state.players = s.players || 0;
+                    state.rooms = s.rooms || 0;
+                    broadcastState();
+                } catch (e) { }
+            } else if (!portMatch) {
                 logger.log('info', `[GAME] ${trimmed}`);
                 broadcastLog(trimmed, 'info');
             }
-        }
+        });
     });
 
     gameProcess.stderr.on('data', (data) => {
@@ -212,48 +219,54 @@ function stopGameServer() {
 // Web Sunucusu ve WebSocket
 // ═══════════════════════════════════════════
 
-function startManagerServer(port) {
-    const serverInstance = http.createServer(app);
+let currentManagerPort = MANAGER_PORT;
+const serverInstance = http.createServer(app);
 
-    serverInstance.on('error', (err) => {
-        if (err.code === 'EADDRINUSE' || err.code === 'EACCES') {
-            logger.log('info', `Manager Port ${port} kullanımda, ${port + 1} deneniyor...`);
-            // EACCES durumunda synchronous fırlatılan hatadan dolayı sunucu nesnesini düzgün kapatıp yenisini açmamız gerekiyor
-            startManagerServer(port + 1);
-        } else {
-            logger.log('error', `Manager sunucusu başlatılamadı: ${err.message}`);
-        }
-    });
+serverInstance.on('error', (err) => {
+    if (err.code === 'EADDRINUSE' || err.code === 'EACCES') {
+        logger.log('info', `Manager Port ${currentManagerPort} kullanımda, ${currentManagerPort + 1} deneniyor...`);
+        currentManagerPort++;
+        setTimeout(() => {
+            serverInstance.listen(currentManagerPort, '127.0.0.1');
+        }, 50);
+    } else {
+        logger.log('error', `Manager sunucusu başlatılamadı: ${err.message}`);
+    }
+});
 
-    serverInstance.listen(port, '127.0.0.1', async () => {
-        state.managerPort = port;
-        state.networkUrl = `http://${getLocalIP()}:${state.port}`;
+serverInstance.on('listening', async () => {
+    state.managerPort = currentManagerPort;
+    state.networkUrl = `http://${getLocalIP()}:${state.port}`;
+    try {
         state.qrCodeData = await QRCode.toDataURL(state.networkUrl);
+    } catch(e) {}
 
-        logger.log('info', `Pano başladı -> http://localhost:${port}`);
+    logger.log('info', `Pano başladı -> http://localhost:${currentManagerPort}`);
 
-        // Tarayıcıyı aç
-        const startCmd = process.platform === 'win32' ? 'start' : 'open';
-        exec(`${startCmd} http://localhost:${port}`);
+    const startCmd = process.platform === 'win32' ? 'start' : 'open';
+    exec(`${startCmd} http://localhost:${currentManagerPort}`);
 
-        // Sistem tepsisi ikonu başlat
-        trayManager.init({
-            gameUrl: state.networkUrl,
-            managerPort: port,
-            onExit: shutdownAll
-        });
-
-        checkFirewall();
-        checkAutostart();
-        startGameServer();
+    trayManager.init({
+        gameUrl: state.networkUrl,
+        managerPort: currentManagerPort,
+        onExit: shutdownAll
     });
 
-    return serverInstance;
-}
+    checkFirewall();
+    checkAutostart();
+    startGameServer();
+});
 
-const server = startManagerServer(MANAGER_PORT);
+serverInstance.listen(currentManagerPort, '127.0.0.1');
 
-const wss = new WebSocketServer({ server, path: '/manager-ws' });
+const wss = new WebSocketServer({ server: serverInstance, path: '/manager-ws' });
+
+wss.on('error', (err) => {
+    // We ignore server binding errors here since serverInstance handles them
+    if (err.code !== 'EADDRINUSE' && err.code !== 'EACCES') {
+        logger.log('error', `WebSocket Hatası: ${err.message}`);
+    }
+});
 
 let clients = new Set();
 
