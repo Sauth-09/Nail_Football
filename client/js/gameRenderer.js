@@ -227,10 +227,16 @@ const GameRenderer = (() => {
         // Layer 7: Particles
         AnimationManager.drawParticles(ctx, 0, 0, Math.min(scaleX, scaleY));
 
+        // Layer 7.5: Fireworks
+        AnimationManager.drawFireworks(ctx, 0, 0, Math.min(scaleX, scaleY));
+
         // Layer 8: Effects after ball (net rip, near-miss text)
         if (typeof EffectsManager !== 'undefined') {
             EffectsManager.draw(ctx, scaleX, scaleY, canvasWidth || canvas.width / (window.devicePixelRatio || 1), canvasHeight || canvas.height / (window.devicePixelRatio || 1));
         }
+
+        // Layer 9: Stadium lights overlay
+        AnimationManager.drawStadiumLights(ctx, canvasWidth || canvas.width / (window.devicePixelRatio || 1), canvasHeight || canvas.height / (window.devicePixelRatio || 1));
 
         ctx.restore();
     }

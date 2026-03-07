@@ -31,6 +31,7 @@ const tournamentService = require('./services/tournamentService');
 const onlineTracker = require('./services/onlineTracker');
 const friendService = require('./services/friendService');
 const ChallengeManager = require('./services/challengeManager');
+const SpectatorService = require('./services/spectatorService');
 const Player = require('./models/Player');
 const bcrypt = require('bcryptjs');
 
@@ -44,8 +45,13 @@ let currentPort = process.env.PORT || 3000;
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
+wss.on('error', (err) => { 
+    // WebSocket hatalarını yutarak ana port mantığının çalışmasına izin veriyoruz
+});
 const gameManager = new GameManager();
 const challengeManager = new ChallengeManager(onlineTracker);
+const spectatorService = new SpectatorService();
+gameManager.spectatorService = spectatorService;
 
 // ═══════════════════════════════════════════════════
 // Statik Dosya Servisi
@@ -93,6 +99,11 @@ app.use(express.static(path.join(__dirname, '..', 'client'), {
 // Health check endpoint for uptime monitoring (e.g., Render)
 app.get('/ping', (req, res) => {
     res.status(200).send('OK');
+});
+
+// API: Active matches (for spectator mode)
+app.get('/api/active-matches', (req, res) => {
+    res.json(spectatorService.getActiveMatches(gameManager));
 });
 
 // API: Get all field configs (for field selection)
@@ -280,6 +291,7 @@ wss.on('connection', (ws, req) => {
         }
 
         gameManager.handleDisconnect(ws);
+        spectatorService.handleDisconnect(ws);
     });
 
     ws.on('error', (error) => {
@@ -853,6 +865,40 @@ function handleMessage(ws, message) {
             break;
         }
 
+        // ═══════════════════════════════════════════════════
+        // Seyirci Modu Mesajları
+        // ═══════════════════════════════════════════════════
+        case 'SPECTATE_LIST': {
+            const matches = spectatorService.getActiveMatches(gameManager);
+            ws.send(JSON.stringify({ type: 'SPECTATE_LIST', matches: matches }));
+            break;
+        }
+
+        case 'SPECTATE_JOIN': {
+            if (!message.roomCode) {
+                ws.send(JSON.stringify({ type: 'SPECTATE_ERROR', message: 'Oda kodu eksik' }));
+                break;
+            }
+            const result = spectatorService.addSpectator(message.roomCode, ws, gameManager);
+            if (result.error) {
+                ws.send(JSON.stringify({ type: 'SPECTATE_ERROR', message: result.error }));
+            } else {
+                ws.send(JSON.stringify({
+                    type: 'SPECTATE_JOINED',
+                    roomCode: result.roomCode,
+                    gameState: result.gameState
+                }));
+            }
+            break;
+        }
+
+        case 'SPECTATE_LEAVE': {
+            if (ws.spectatingRoom) {
+                spectatorService.removeSpectator(ws.spectatingRoom, ws);
+            }
+            break;
+        }
+
         default:
             console.log(`[DEBUG] Bilinmeyen mesaj tipi: ${type}`);
     }
@@ -1028,12 +1074,12 @@ function startServer(port) {
         }, 60000);
 
     }).on('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
+        if (err.code === 'EADDRINUSE' || err.code === 'EACCES') {
             if (isProduction) {
                 console.error(`[ERROR] Port ${port} kullanimda. Production ortaminda port degistirilemez, islem durduruluyor.`);
                 process.exit(1);
             } else {
-                console.log(`[INFO] Port ${port} kullanimda, ${port + 1} portu deneniyor...`);
+                console.log(`[INFO] Port ${port} kullanimda veya erisim reddedildi, ${port + 1} portu deneniyor...`);
                 server.removeAllListeners('error');
                 startServer(port + 1);
             }

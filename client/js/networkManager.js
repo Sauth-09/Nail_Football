@@ -207,6 +207,30 @@ const NetworkManager = (() => {
     }
 
     /**
+     * Joins a room as spectator
+     * @param {string} code - Room code
+     */
+    function joinSpectator(code) {
+        if (!connected) {
+            connect().then((success) => {
+                if (success) send({ type: 'SPECTATE_JOIN', roomCode: code });
+            });
+        } else {
+            send({ type: 'SPECTATE_JOIN', roomCode: code });
+        }
+    }
+
+    /**
+     * Leaves spectator mode
+     */
+    function leaveSpectator() {
+        if (connected) {
+            send({ type: 'SPECTATE_LEAVE' });
+            disconnect();
+        }
+    }
+
+    /**
      * Disconnects from the server
      */
     function disconnect() {
@@ -256,6 +280,8 @@ const NetworkManager = (() => {
         confirmField,
         shoot,
         ready,
+        joinSpectator,
+        leaveSpectator,
         disconnect,
         isConnected,
         getRoomCode,

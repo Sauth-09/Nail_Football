@@ -30,6 +30,9 @@ const SoundManager = (() => {
     /** @type {boolean} Sound effects enabled */
     let sfxEnabled = true;
 
+    /** @type {boolean} Commentator/cheer sounds enabled */
+    let commentatorEnabled = true;
+
     /**
      * Initializes the audio context (must be called after user interaction)
      */
@@ -153,6 +156,103 @@ const SoundManager = (() => {
                 playTone(freq, freq, 0.15, 'square', 0.25);
             }, i * 150);
         });
+
+        // Commentator and crowd sounds
+        if (commentatorEnabled) {
+            setTimeout(() => playCommentatorGoal(), 300);
+            setTimeout(() => playGoalCheer(), 600);
+        }
+    }
+
+    /**
+     * Plays the commentator "GOOOL!" sound (rising tone with echo)
+     */
+    function playCommentatorGoal() {
+        if (!audioContext || !sfxEnabled) return;
+        resume();
+
+        // Rising "GOOOL" tone with vibrato
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const lfo = audioContext.createOscillator();
+        const lfoGain = audioContext.createGain();
+
+        // Vibrato using LFO
+        lfo.frequency.value = 6;
+        lfoGain.gain.value = 25;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, audioContext.currentTime);
+        osc.frequency.linearRampToValueAtTime(600, audioContext.currentTime + 0.8);
+        osc.frequency.linearRampToValueAtTime(400, audioContext.currentTime + 1.2);
+
+        gain.gain.setValueAtTime(0, audioContext.currentTime);
+        gain.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, audioContext.currentTime + 0.8);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.5);
+
+        osc.connect(gain);
+        gain.connect(masterGain);
+
+        lfo.start(audioContext.currentTime);
+        osc.start(audioContext.currentTime);
+        osc.stop(audioContext.currentTime + 1.5);
+        lfo.stop(audioContext.currentTime + 1.5);
+    }
+
+    /**
+     * Plays crowd cheering sound (white noise with bandpass filter)
+     */
+    function playGoalCheer() {
+        if (!audioContext || !sfxEnabled) return;
+        resume();
+
+        const duration = 2.0;
+        const sampleRate = audioContext.sampleRate;
+        const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+        const data = buffer.getChannelData(0);
+
+        // Generate noise with crowd-like modulation
+        for (let i = 0; i < data.length; i++) {
+            const t = i / sampleRate;
+            const envelope = Math.sin(t / duration * Math.PI) * 0.8;
+            const wave = (Math.random() * 2 - 1) * envelope;
+            // Add low-frequency modulation for crowd "wave" effect
+            const mod = 1 + 0.3 * Math.sin(t * 3.5 * Math.PI);
+            data[i] = wave * mod;
+        }
+
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+
+        // Bandpass filter to simulate crowd frequency range
+        const filter = audioContext.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1200;
+        filter.Q.value = 0.8;
+
+        const gain = audioContext.createGain();
+        gain.gain.setValueAtTime(0, audioContext.currentTime);
+        gain.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.15, audioContext.currentTime + 1.0);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(masterGain);
+
+        source.start(audioContext.currentTime);
+        source.stop(audioContext.currentTime + duration);
+    }
+
+    /**
+     * Enables or disables commentator/cheer sounds
+     * @param {boolean} enabled
+     */
+    function setCommentatorEnabled(enabled) {
+        commentatorEnabled = enabled;
     }
 
     /**
@@ -203,11 +303,14 @@ const SoundManager = (() => {
         resume,
         setVolume,
         setSfxEnabled,
+        setCommentatorEnabled,
         playTone,
         playKick,
         playNailHit,
         playWallHit,
         playGoal,
+        playCommentatorGoal,
+        playGoalCheer,
         playClick,
         playTurnChange,
         playStart,

@@ -241,6 +241,14 @@ const AnimationManager = (() => {
             spawnParticles(goalX, goalY, c, 1, 6, 60);
         }
 
+        // Fireworks (if enabled)
+        if (fireworksEnabled) {
+            triggerFireworks(goalX, goalY, scoringPlayer);
+        }
+
+        // Stadium lights flash
+        triggerStadiumLights(scoringPlayer);
+
         // Show goal overlay
         const overlay = document.getElementById('goal-overlay');
         const goalText = document.getElementById('goal-text');
@@ -332,6 +340,241 @@ const AnimationManager = (() => {
     }
 
     // ═══════════════════════════════════════════
+    // Firework System
+    // ═══════════════════════════════════════════
+
+    /** @type {boolean} Whether fireworks are enabled */
+    let fireworksEnabled = true;
+
+    /** @type {Array<Object>} Active firework rockets */
+    const fireworkRockets = [];
+
+    /** @type {Array<Object>} Active firework explosion particles */
+    const fireworkParticles = [];
+
+    /**
+     * Enables or disables fireworks
+     * @param {boolean} enabled
+     */
+    function setFireworksEnabled(enabled) {
+        fireworksEnabled = enabled;
+    }
+
+    /**
+     * Launches firework rockets from goal area
+     * @param {number} goalX
+     * @param {number} goalY
+     * @param {number} scoringPlayer
+     */
+    function triggerFireworks(goalX, goalY, scoringPlayer) {
+        const baseColor = scoringPlayer === 1 ? '#2196F3' : '#F44336';
+        const launchColors = [baseColor, '#ffd700', '#ff6ec7', '#00ff88', '#ff4444', '#44aaff'];
+
+        // Launch 4-6 rockets with staggered timing
+        const rocketCount = 4 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < rocketCount; i++) {
+            const delay = i * 8; // Stagger launches
+            fireworkRockets.push({
+                x: goalX + (Math.random() - 0.5) * 200,
+                y: goalY,
+                vx: (Math.random() - 0.5) * 2,
+                vy: -(4 + Math.random() * 3), // Upward velocity
+                color: launchColors[Math.floor(Math.random() * launchColors.length)],
+                life: 40 + Math.floor(Math.random() * 20),
+                delay: delay,
+                exploded: false
+            });
+        }
+    }
+
+    /**
+     * Updates firework rockets and explosion particles
+     */
+    function updateFireworks() {
+        // Update rockets
+        for (let i = fireworkRockets.length - 1; i >= 0; i--) {
+            const rocket = fireworkRockets[i];
+            if (rocket.delay > 0) {
+                rocket.delay--;
+                continue;
+            }
+            rocket.x += rocket.vx;
+            rocket.y += rocket.vy;
+            rocket.vy += 0.05; // Slight gravity deceleration
+            rocket.life--;
+
+            // Explode when life runs out or velocity slows
+            if (rocket.life <= 0 || rocket.vy >= -0.5) {
+                if (!rocket.exploded) {
+                    rocket.exploded = true;
+                    explodeFirework(rocket.x, rocket.y, rocket.color);
+                }
+                fireworkRockets.splice(i, 1);
+            }
+        }
+
+        // Update explosion particles
+        for (let i = fireworkParticles.length - 1; i >= 0; i--) {
+            const p = fireworkParticles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.06; // Gravity
+            p.vx *= 0.98; // Drag
+            p.life--;
+            if (p.life <= 0) {
+                fireworkParticles.splice(i, 1);
+            }
+        }
+    }
+
+    /**
+     * Creates explosion particles at position
+     * @param {number} x
+     * @param {number} y
+     * @param {string} baseColor
+     */
+    function explodeFirework(x, y, baseColor) {
+        const count = 20 + Math.floor(Math.random() * 15);
+        const sparkColors = [baseColor, '#ffffff', adjustColorBrightness(baseColor, 40)];
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+            const speed = 2 + Math.random() * 3;
+            fireworkParticles.push({
+                x: x,
+                y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                color: sparkColors[Math.floor(Math.random() * sparkColors.length)],
+                life: 30 + Math.floor(Math.random() * 20),
+                maxLife: 50,
+                size: 1.5 + Math.random() * 2
+            });
+        }
+    }
+
+    /**
+     * Draws firework rockets and explosion particles
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {number} offsetX
+     * @param {number} offsetY
+     * @param {number} scale
+     */
+    function drawFireworks(ctx, offsetX = 0, offsetY = 0, scale = 1) {
+        // Draw rockets (bright trail)
+        for (const rocket of fireworkRockets) {
+            if (rocket.delay > 0) continue;
+            ctx.save();
+            ctx.shadowColor = rocket.color;
+            ctx.shadowBlur = 8;
+            ctx.fillStyle = rocket.color;
+            ctx.beginPath();
+            ctx.arc(
+                offsetX + rocket.x * scale,
+                offsetY + rocket.y * scale,
+                3 * scale, 0, Math.PI * 2
+            );
+            ctx.fill();
+            // Trail
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.arc(
+                offsetX + (rocket.x - rocket.vx * 2) * scale,
+                offsetY + (rocket.y - rocket.vy * 2) * scale,
+                2 * scale, 0, Math.PI * 2
+            );
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Draw explosion particles
+        for (const p of fireworkParticles) {
+            const alpha = p.life / p.maxLife;
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(
+                offsetX + p.x * scale,
+                offsetY + p.y * scale,
+                p.size * scale * alpha,
+                0, Math.PI * 2
+            );
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    /**
+     * Helper: adjusts hex color brightness
+     */
+    function adjustColorBrightness(hex, amount) {
+        const num = parseInt(hex.replace('#', ''), 16);
+        const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+        const g = Math.min(255, Math.max(0, ((num >> 8) & 0xFF) + amount));
+        const b = Math.min(255, Math.max(0, (num & 0xFF) + amount));
+        return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
+    }
+
+    // ═══════════════════════════════════════════
+    // Stadium Light Flash
+    // ═══════════════════════════════════════════
+
+    /** @type {Object} Stadium light state */
+    const stadiumLight = {
+        active: false,
+        timer: 0,
+        duration: 30,
+        color: '#ffffff',
+        intensity: 0
+    };
+
+    /**
+     * Triggers stadium light flash
+     * @param {number} scoringPlayer
+     */
+    function triggerStadiumLights(scoringPlayer) {
+        stadiumLight.active = true;
+        stadiumLight.timer = stadiumLight.duration;
+        stadiumLight.color = scoringPlayer === 1 ? '#2196F3' : '#F44336';
+        stadiumLight.intensity = 0.35;
+    }
+
+    /**
+     * Updates stadium light flash
+     */
+    function updateStadiumLights() {
+        if (!stadiumLight.active) return;
+        stadiumLight.timer--;
+        const progress = stadiumLight.timer / stadiumLight.duration;
+        stadiumLight.intensity = 0.35 * progress * (0.5 + 0.5 * Math.sin(progress * Math.PI * 6));
+        if (stadiumLight.timer <= 0) {
+            stadiumLight.active = false;
+            stadiumLight.intensity = 0;
+        }
+    }
+
+    /**
+     * Draws stadium light overlay
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {number} width
+     * @param {number} height
+     */
+    function drawStadiumLights(ctx, width, height) {
+        if (!stadiumLight.active || stadiumLight.intensity <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = stadiumLight.intensity;
+        // Radial gradient flash from center
+        const gradient = ctx.createRadialGradient(
+            width / 2, height / 2, 0,
+            width / 2, height / 2, Math.max(width, height) * 0.7
+        );
+        gradient.addColorStop(0, stadiumLight.color);
+        gradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+    }
+
+    // ═══════════════════════════════════════════
     // Master Update
     // ═══════════════════════════════════════════
 
@@ -343,6 +586,8 @@ const AnimationManager = (() => {
         updateShake();
         updateNailGlows();
         updateGoalAnimation();
+        updateFireworks();
+        updateStadiumLights();
     }
 
     /**
@@ -369,6 +614,14 @@ const AnimationManager = (() => {
         // Clear ball pulse
         ballPulse.active = false;
         ballPulse.phase = 0;
+
+        // Clear fireworks
+        fireworkRockets.length = 0;
+        fireworkParticles.length = 0;
+
+        // Clear stadium lights
+        stadiumLight.active = false;
+        stadiumLight.intensity = 0;
     }
 
     return {
@@ -384,6 +637,9 @@ const AnimationManager = (() => {
         getBallPulseScale,
         triggerScoreBounce,
         getScoreBounceScale,
+        setFireworksEnabled,
+        drawFireworks,
+        drawStadiumLights,
         update,
         clearAll
     };

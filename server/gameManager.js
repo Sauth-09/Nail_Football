@@ -516,6 +516,11 @@ class GameManager {
                 }
             }
         }
+
+        // Broadcast to spectators if available
+        if (this.spectatorService) {
+            this.spectatorService.broadcastToSpectators(room.code, data);
+        }
     }
 
     /**
@@ -533,6 +538,11 @@ class GameManager {
 
         this.rooms.delete(code);
         console.log(`[INFO] Oda silindi: ${code}`);
+
+        // Cleanup spectators
+        if (this.spectatorService) {
+            this.spectatorService.cleanupRoom(code);
+        }
     }
 
     /**

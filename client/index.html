@@ -10,9 +10,11 @@
     <title>⚽ Çivi Futbolu - Nail Football</title>
     <link rel="icon" href="futbol.ico" type="image/x-icon">
     <link rel="shortcut icon" href="futbol.ico" type="image/x-icon">
-    <link rel="stylesheet" href="css/styles.css?v=1.4">
-    <link rel="stylesheet" href="css/friends.css?v=1.4">
-    <link rel="stylesheet" href="css/notifications.css?v=1.4">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="stylesheet" href="css/styles.css?v=v1.5">
+    <link rel="stylesheet" href="css/friends.css?v=v1.5">
+    <link rel="stylesheet" href="css/notifications.css?v=v1.5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -62,12 +64,17 @@
                         <span class="btn-text" style="font-size: 0.8em">ONLİNE</span>
                     </button>
                 </div>
-                <button id="btn-friends" class="menu-btn secondary">
-                    <span class="btn-icon">👥</span>
-                    <span class="btn-text">ARKADAŞLAR</span>
-                    <span id="friends-online-count" class="online-badge" style="display:none"></span>
-                </button>
                 <div class="menu-row">
+                    <button id="btn-friends" class="menu-btn secondary">
+                        <span class="btn-icon">👥</span>
+                        <span class="btn-text" style="font-size: 0.8em">ARKADAŞLAR</span>
+                        <span id="friends-online-count" class="online-badge" style="display:none"></span>
+                    </button>
+                    <button id="btn-spectate" class="menu-btn secondary">
+                        <span class="btn-icon">👁️</span>
+                        <span class="btn-text" style="font-size: 0.8em">İZLE</span>
+                    </button>
+                </div>
                     <button id="btn-tournament" class="menu-btn">
                         <span class="btn-icon">🏆</span>
                         <span class="btn-text">TURNUVA</span>
@@ -131,6 +138,23 @@
                 </select>
             </div>
             <p class="setting-desc" style="font-size: 0.85em; opacity: 0.8; margin: 0;">Kalenin önünde hareket eden bir engel ekler.</p>
+            <div class="setting-row" style="justify-content: center; gap: 10px; margin-top: 12px; flex-wrap: wrap;">
+                <label style="font-weight: 600;">⚽ Top:</label>
+                <select id="field-ball-theme" class="menu-select" style="padding: 5px; border-radius: 5px; width: 120px;">
+                    <option value="classic" selected>Klasik ⚽</option>
+                    <option value="fire">Alev 🔥</option>
+                    <option value="neon">Neon 💚</option>
+                    <option value="gold">Altın ✨</option>
+                    <option value="ice">Buz ❄️</option>
+                </select>
+                <label style="font-weight: 600;">📌 Çivi:</label>
+                <select id="field-nail-theme" class="menu-select" style="padding: 5px; border-radius: 5px; width: 120px;">
+                    <option value="metal" selected>Metal ⬜</option>
+                    <option value="gold">Altın 🟡</option>
+                    <option value="neon">Neon 🟢</option>
+                    <option value="ice">Buz 🔵</option>
+                </select>
+            </div>
         </div>
         <button id="btn-start-game" class="menu-btn primary start-btn" style="margin-top: 20px;">OYUNU BAŞLAT</button>
     </div>
@@ -287,6 +311,42 @@
                 <div class="setting-row">
                     <label>Parçacık Efektleri:</label>
                     <select id="setting-particles">
+                        <option value="1" selected>Açık</option>
+                        <option value="0">Kapalı</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-group">
+                <h3>🎨 Kişiselleştirme</h3>
+                <div class="setting-row">
+                    <label>Top Teması:</label>
+                    <select id="setting-ball-theme">
+                        <option value="classic" selected>Klasik ⚽</option>
+                        <option value="fire">Alev 🔥</option>
+                        <option value="neon">Neon 💚</option>
+                        <option value="gold">Altın ✨</option>
+                        <option value="ice">Buz ❄️</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>Çivi Teması:</label>
+                    <select id="setting-nail-theme">
+                        <option value="metal" selected>Metal ⬜</option>
+                        <option value="gold">Altın 🟡</option>
+                        <option value="neon">Neon 🟢</option>
+                        <option value="ice">Buz 🔵</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>🎆 Havai Fişek:</label>
+                    <select id="setting-fireworks">
+                        <option value="1" selected>Açık</option>
+                        <option value="0">Kapalı</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>📢 Spiker Sesi:</label>
+                    <select id="setting-commentator">
                         <option value="1" selected>Açık</option>
                         <option value="0">Kapalı</option>
                     </select>
@@ -474,6 +534,22 @@
                 <p id="auth-error" class="auth-error" style="display:none"></p>
                 <br>
                 <button id="btn-auth-skip" class="menu-btn">Atla (Misafir)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Seyirci Modu: Aktif Maçlar -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="spectate-list" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-spectate" class="back-btn">← Menü</button>
+            <h2>👁️ Canlı Maçlar</h2>
+            <button id="btn-refresh-spectate" class="action-btn" title="Yenile">🔄</button>
+        </div>
+        <div class="friends-content" style="padding: 15px;">
+            <div id="active-matches-container" class="friends-list">
+                <div class="empty-state">Yükleniyor...</div>
             </div>
         </div>
     </div>
@@ -754,28 +830,38 @@
 
     <!-- JavaScript Modules -->
     <!-- AI Modules -->
-    <script src="js/ai/aiSimulator.js?v=1.4"></script>
-    <script src="js/ai/aiStrategy.js?v=1.4"></script>
-    <script src="js/ai/aiPersonality.js?v=1.4"></script>
-    <script src="js/ai/aiAnimator.js?v=1.4"></script>
-    <script src="js/ai/aiPlayer.js?v=1.4"></script>
+    <script src="js/ai/aiSimulator.js?v=v1.5"></script>
+    <script src="js/ai/aiStrategy.js?v=v1.5"></script>
+    <script src="js/ai/aiPersonality.js?v=v1.5"></script>
+    <script src="js/ai/aiAnimator.js?v=v1.5"></script>
+    <script src="js/ai/aiPlayer.js?v=v1.5"></script>
 
     <!-- Core Modules -->
-    <script src="js/soundManager.js?v=1.4"></script>
-    <script src="js/animationManager.js?v=1.4"></script>
-    <script src="js/effectsManager.js?v=1.4"></script>
-    <script src="js/physicsClient.js?v=1.4"></script>
-    <script src="js/fieldRenderer.js?v=1.4"></script>
-    <script src="js/gameRenderer.js?v=1.4"></script>
-    <script src="js/inputHandler.js?v=1.4"></script>
-    <script src="js/networkManager.js?v=1.4"></script>
-    <script src="js/authManager.js?v=1.4"></script>
-    <script src="js/notificationManager.js?v=1.4"></script>
-    <script src="js/friends.js?v=1.4"></script>
-    <script src="js/challengeUI.js?v=1.4"></script>
-    <script src="js/leaderboard.js?v=1.4"></script>
-    <script src="js/tournament.js?v=1.4"></script>
-    <script src="js/uiManager.js?v=1.4"></script>
-    <script src="js/main.js?v=1.4"></script>
+    <script src="js/soundManager.js?v=v1.5"></script>
+    <script src="js/animationManager.js?v=v1.5"></script>
+    <script src="js/effectsManager.js?v=v1.5"></script>
+    <script src="js/physicsClient.js?v=v1.5"></script>
+    <script src="js/fieldRenderer.js?v=v1.5"></script>
+    <script src="js/gameRenderer.js?v=v1.5"></script>
+    <script src="js/inputHandler.js?v=v1.5"></script>
+    <script src="js/networkManager.js?v=v1.5"></script>
+    <script src="js/authManager.js?v=v1.5"></script>
+    <script src="js/notificationManager.js?v=v1.5"></script>
+    <script src="js/friends.js?v=v1.5"></script>
+    <script src="js/challengeUI.js?v=v1.5"></script>
+    <script src="js/leaderboard.js?v=v1.5"></script>
+    <script src="js/tournament.js?v=v1.5"></script>
+    <script src="js/uiManager.js?v=v1.5"></script>
+    <script src="js/main.js?v=v1.5"></script>
+    <script>
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((reg) => console.log('[PWA] Service Worker registered:', reg.scope))
+                    .catch((err) => console.error('[PWA] SW registration failed:', err));
+            });
+        }
+    </script>
 </body>
 </html>

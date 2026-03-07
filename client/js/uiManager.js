@@ -24,7 +24,11 @@ const UIManager = (() => {
         sfx: true,
         vibration: true,
         goalkeeperEnabled: true,
-        goalkeeperSize: 30
+        goalkeeperSize: 30,
+        ballTheme: 'classic',
+        nailTheme: 'metal',
+        fireworks: true,
+        commentator: true
     };
 
     /** @type {Array} Available fields */
@@ -100,6 +104,24 @@ const UIManager = (() => {
             if (typeof LeaderboardUI !== 'undefined') LeaderboardUI.loadLeaderboard('weekly');
         });
 
+        const btnSpectate = document.getElementById('btn-spectate');
+        const btnRefreshSpectate = document.getElementById('btn-refresh-spectate');
+        
+        if (btnSpectate) btnSpectate.addEventListener('click', () => {
+            SoundManager.playClick();
+            if (typeof AuthManager !== 'undefined' && !AuthManager.isLoggedIn()) {
+                showScreen('auth-screen');
+            } else {
+                showScreen('spectate-list');
+                loadActiveMatches();
+            }
+        });
+
+        if (btnRefreshSpectate) btnRefreshSpectate.addEventListener('click', () => {
+            SoundManager.playClick();
+            loadActiveMatches();
+        });
+
         if (btnProfile) btnProfile.addEventListener('click', () => {
             SoundManager.playClick();
             if (typeof AuthManager !== 'undefined' && !AuthManager.isLoggedIn()) {
@@ -173,9 +195,15 @@ const UIManager = (() => {
                 SoundManager.playClick();
                 const screenId = e.target.id;
                 if (screenId === 'btn-back-game') {
-                    showConfirmDialog('Oyundan çıkmak istediğinize emin misiniz?', () => {
+                    showConfirmDialog('Çıkmak istediğinize emin misiniz?', () => {
                         showScreen('main-menu');
-                        if (typeof Game !== 'undefined') Game.stop();
+                        if (typeof Game !== 'undefined') {
+                            if (Game.getMode() === 'spectator' && typeof NetworkManager !== 'undefined') {
+                                NetworkManager.leaveSpectator();
+                            } else {
+                                Game.stop();
+                            }
+                        }
                     });
                 } else if (screenId === 'btn-back-field') {
                     // Eğer AI modundaysak, geri dönünce zorluk seçimine gitsin, yoksa ana menüye
@@ -503,6 +531,58 @@ const UIManager = (() => {
                 saveSettings();
             });
         }
+
+        // Ball & Nail Theme (Settings screen)
+        const settingBallTheme = document.getElementById('setting-ball-theme');
+        const settingNailTheme = document.getElementById('setting-nail-theme');
+        if (settingBallTheme) settingBallTheme.addEventListener('change', () => {
+            settings.ballTheme = settingBallTheme.value;
+            FieldRenderer.setBallTheme(settings.ballTheme);
+            // Sync field-select dropdown
+            const fieldBallTheme = document.getElementById('field-ball-theme');
+            if (fieldBallTheme) fieldBallTheme.value = settings.ballTheme;
+            saveSettings();
+        });
+        if (settingNailTheme) settingNailTheme.addEventListener('change', () => {
+            settings.nailTheme = settingNailTheme.value;
+            FieldRenderer.setNailTheme(settings.nailTheme);
+            // Sync field-select dropdown
+            const fieldNailTheme = document.getElementById('field-nail-theme');
+            if (fieldNailTheme) fieldNailTheme.value = settings.nailTheme;
+            saveSettings();
+        });
+
+        // Ball & Nail Theme (Field Select screen - quick selectors)
+        const fieldBallTheme = document.getElementById('field-ball-theme');
+        const fieldNailTheme = document.getElementById('field-nail-theme');
+        if (fieldBallTheme) fieldBallTheme.addEventListener('change', () => {
+            settings.ballTheme = fieldBallTheme.value;
+            FieldRenderer.setBallTheme(settings.ballTheme);
+            // Sync settings screen dropdown
+            if (settingBallTheme) settingBallTheme.value = settings.ballTheme;
+            saveSettings();
+        });
+        if (fieldNailTheme) fieldNailTheme.addEventListener('change', () => {
+            settings.nailTheme = fieldNailTheme.value;
+            FieldRenderer.setNailTheme(settings.nailTheme);
+            // Sync settings screen dropdown
+            if (settingNailTheme) settingNailTheme.value = settings.nailTheme;
+            saveSettings();
+        });
+
+        // Fireworks & Commentator toggles
+        const settingFireworks = document.getElementById('setting-fireworks');
+        const settingCommentator = document.getElementById('setting-commentator');
+        if (settingFireworks) settingFireworks.addEventListener('change', () => {
+            settings.fireworks = settingFireworks.value === '1';
+            AnimationManager.setFireworksEnabled(settings.fireworks);
+            saveSettings();
+        });
+        if (settingCommentator) settingCommentator.addEventListener('change', () => {
+            settings.commentator = settingCommentator.value === '1';
+            SoundManager.setCommentatorEnabled(settings.commentator);
+            saveSettings();
+        });
     }
 
     /**
@@ -1121,6 +1201,80 @@ const UIManager = (() => {
         SoundManager.setVolume(settings.volume);
         SoundManager.setSfxEnabled(settings.sfx);
         FieldRenderer.setTheme(settings.theme);
+
+        // Apply ball and nail themes
+        if (settings.ballTheme) {
+            FieldRenderer.setBallTheme(settings.ballTheme);
+            const settingBallTheme = document.getElementById('setting-ball-theme');
+            const fieldBallTheme = document.getElementById('field-ball-theme');
+            if (settingBallTheme) settingBallTheme.value = settings.ballTheme;
+            if (fieldBallTheme) fieldBallTheme.value = settings.ballTheme;
+        }
+        if (settings.nailTheme) {
+            FieldRenderer.setNailTheme(settings.nailTheme);
+            const settingNailTheme = document.getElementById('setting-nail-theme');
+            const fieldNailTheme = document.getElementById('field-nail-theme');
+            if (settingNailTheme) settingNailTheme.value = settings.nailTheme;
+            if (fieldNailTheme) fieldNailTheme.value = settings.nailTheme;
+        }
+
+        // Apply fireworks & commentator settings
+        if (settings.fireworks !== undefined) {
+            AnimationManager.setFireworksEnabled(settings.fireworks);
+            const settingFireworks = document.getElementById('setting-fireworks');
+            if (settingFireworks) settingFireworks.value = settings.fireworks ? '1' : '0';
+        }
+        if (settings.commentator !== undefined) {
+            SoundManager.setCommentatorEnabled(settings.commentator);
+            const settingCommentator = document.getElementById('setting-commentator');
+            if (settingCommentator) settingCommentator.value = settings.commentator ? '1' : '0';
+        }
+    }
+
+    /**
+     * Loads active matches for spectator mode
+     */
+    async function loadActiveMatches() {
+        const container = document.getElementById('active-matches-container');
+        if (!container) return;
+
+        container.innerHTML = '<div class="lb-loading">Maçlar Aranıyor...</div>';
+
+        try {
+            const response = await fetch('/api/active-matches');
+            if (!response.ok) throw new Error('API Error');
+            const matches = await response.json();
+
+            if (!matches || matches.length === 0) {
+                container.innerHTML = '<div class="empty-state">Şu an aktif canlı maç bulunmuyor.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            matches.forEach(match => {
+                const card = document.createElement('div');
+                card.className = 'friend-card';
+                card.innerHTML = `
+                    <div class="friend-info">
+                        <div class="friend-status online"></div>
+                        <div>
+                            <div class="friend-name" style="font-size: 1.1em;">${match.player1} <span style="color:#64ffda;font-size:0.8em">vs</span> ${match.player2}</div>
+                            <div class="friend-last-seen" style="display: flex; gap: 10px; margin-top: 5px;">
+                                <span style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">Skor: ${match.score[0]}-${match.score[1]}</span>
+                                <span style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">👁️ ${match.spectators} İzleyici</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="friend-actions">
+                        <button class="action-btn play-btn" onclick="NetworkManager.joinSpectator('${match.roomCode}')" title="İzle">👁️ İzle</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        } catch (err) {
+            console.error('[Spectator] Canlı maçlar yüklenemedi:', err);
+            container.innerHTML = '<div class="empty-state" style="color: #ff6b6b">Maçlar yüklenirken bir hata oluştu.</div>';
+        }
     }
 
     /**
@@ -1171,6 +1325,7 @@ const UIManager = (() => {
         toggleFullscreen,
         showGameOverElo,
         showNotification,
-        showAIMessage
+        showAIMessage,
+        loadActiveMatches
     };
 })();

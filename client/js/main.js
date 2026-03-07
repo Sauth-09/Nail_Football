@@ -1002,6 +1002,36 @@ const Game = (() => {
                 }
                 break;
 
+            case 'SPECTATE_JOINED':
+                gameMode = 'spectator';
+                currentField = data.gameState.fieldConfig;
+                scores = data.gameState.scores || [0, 0];
+                currentPlayer = data.gameState.currentPlayer || 1;
+                ballPos = data.gameState.ballPosition ? { ...data.gameState.ballPosition } : { ...currentField.ballStartPosition };
+                gameActive = true;
+                gameState = 'idle';
+
+                UIManager.showScreen('game-screen');
+                UIManager.updateScore(scores[0], scores[1]);
+                UIManager.updateTurnIndicator(currentPlayer, 'waiting');
+                UIManager.showPowerBar(false);
+                UIManager.showNotification('📺 İzleyici Moduna Geçildi');
+
+                setTimeout(() => {
+                    requestAnimationFrame(() => {
+                        GameRenderer.setField(currentField);
+                        GameRenderer.setCurrentPlayer(currentPlayer);
+                        GameRenderer.setBallPosition(ballPos.x, ballPos.y);
+                        InputHandler.setPhase('idle');
+                        startGameLoop();
+                    });
+                }, 100);
+                break;
+
+            case 'SPECTATE_ERROR':
+                UIManager.showNotification(data.message || 'Maça katılınamadı');
+                break;
+
             case 'AUTH_ERROR':
                 if (typeof AuthManager !== 'undefined') {
                     AuthManager.handleAuthError(data.message);

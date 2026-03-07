@@ -171,6 +171,26 @@ function appendLog(text, level = 'info') {
 // Event Listeners
 // ═══════════════════════════════════════════
 
+// Mobile Sidebar Toggle
+const sidebarToggle = document.getElementById('sidebar-toggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+function toggleSidebar() {
+    sidebar.classList.toggle('open');
+    sidebarToggle.classList.toggle('active');
+    sidebarOverlay.classList.toggle('active');
+}
+
+function closeSidebar() {
+    sidebar.classList.remove('open');
+    sidebarToggle.classList.remove('active');
+    sidebarOverlay.classList.remove('active');
+}
+
+sidebarToggle.addEventListener('click', toggleSidebar);
+sidebarOverlay.addEventListener('click', closeSidebar);
+
 // Tabs
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -179,6 +199,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
         btn.classList.add('active');
         document.getElementById(btn.dataset.target).classList.add('active');
+
+        // Close sidebar on mobile after selecting a tab
+        closeSidebar();
 
         if (btn.dataset.target === 'users') {
             loadUsers(1);

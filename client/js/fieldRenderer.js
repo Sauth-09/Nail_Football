@@ -20,6 +20,83 @@ const FieldRenderer = (() => {
     /** @type {string} Current theme */
     let currentTheme = 'grass';
 
+    /** @type {string} Current ball theme */
+    let currentBallTheme = 'classic';
+
+    /** @type {string} Current nail theme */
+    let currentNailTheme = 'metal';
+
+    // ═══════════════════════════════════════════
+    // Ball Theme Definitions
+    // ═══════════════════════════════════════════
+    const BALL_THEMES = {
+        classic: {
+            name: 'Klasik ⚽',
+            light: '#ffffff', mid: '#e0e0e0', dark: '#bdbdbd',
+            patternColor: 'rgba(0,0,0,0.15)',
+            highlightAlpha: 0.6,
+            glowColor: null, glowBlur: 0
+        },
+        fire: {
+            name: 'Alev 🔥',
+            light: '#ffcc00', mid: '#ff6600', dark: '#cc3300',
+            patternColor: 'rgba(120,0,0,0.25)',
+            highlightAlpha: 0.7,
+            glowColor: '#ff4400', glowBlur: 18
+        },
+        neon: {
+            name: 'Neon 💚',
+            light: '#66ff66', mid: '#00e600', dark: '#009900',
+            patternColor: 'rgba(0,80,0,0.2)',
+            highlightAlpha: 0.8,
+            glowColor: '#00ff44', glowBlur: 20
+        },
+        gold: {
+            name: 'Altın ✨',
+            light: '#fff9c4', mid: '#ffd700', dark: '#b8860b',
+            patternColor: 'rgba(100,60,0,0.2)',
+            highlightAlpha: 0.7,
+            glowColor: '#ffd700', glowBlur: 14
+        },
+        ice: {
+            name: 'Buz ❄️',
+            light: '#e0f7fa', mid: '#80deea', dark: '#4dd0e1',
+            patternColor: 'rgba(0,60,80,0.15)',
+            highlightAlpha: 0.8,
+            glowColor: '#00bcd4', glowBlur: 16
+        }
+    };
+
+    // ═══════════════════════════════════════════
+    // Nail Theme Definitions
+    // ═══════════════════════════════════════════
+    const NAIL_THEMES = {
+        metal: {
+            name: 'Metal ⬜',
+            light: '#C0C0C0', mid: '#9E9E9E', dark: '#606060',
+            glowLight: '#ffffff', glowDark: '#C0C0C0',
+            glowColor: '#ffffff'
+        },
+        gold: {
+            name: 'Altın 🟡',
+            light: '#ffd700', mid: '#daa520', dark: '#b8860b',
+            glowLight: '#fff9c4', glowDark: '#ffd700',
+            glowColor: '#ffd700'
+        },
+        neon: {
+            name: 'Neon 🟢',
+            light: '#66ff66', mid: '#33cc33', dark: '#1a8c1a',
+            glowLight: '#ccffcc', glowDark: '#66ff66',
+            glowColor: '#00ff44'
+        },
+        ice: {
+            name: 'Buz 🔵',
+            light: '#80deea', mid: '#4dd0e1', dark: '#00838f',
+            glowLight: '#e0f7fa', glowDark: '#80deea',
+            glowColor: '#00bcd4'
+        }
+    };
+
     /** Theme color palettes */
     const THEMES = {
         grass: {
@@ -247,6 +324,7 @@ const FieldRenderer = (() => {
      */
     function drawNails(ctx, field, scaleX, scaleY) {
         const r = field.nailRadius;
+        const nailTheme = NAIL_THEMES[currentNailTheme] || NAIL_THEMES.metal;
 
         for (let i = 0; i < field.nails.length; i++) {
             const nail = field.nails[i];
@@ -258,8 +336,8 @@ const FieldRenderer = (() => {
             const glow = AnimationManager.getNailGlow(i);
 
             if (glow > 0) {
-                // Glow effect
-                ctx.shadowColor = '#ffffff';
+                // Glow effect with theme color
+                ctx.shadowColor = nailTheme.glowColor;
                 ctx.shadowBlur = 15 * glow;
             }
 
@@ -270,12 +348,12 @@ const FieldRenderer = (() => {
             );
 
             if (glow > 0) {
-                gradient.addColorStop(0, '#ffffff');
-                gradient.addColorStop(1, '#C0C0C0');
+                gradient.addColorStop(0, nailTheme.glowLight);
+                gradient.addColorStop(1, nailTheme.glowDark);
             } else {
-                gradient.addColorStop(0, '#C0C0C0');
-                gradient.addColorStop(0.7, '#9E9E9E');
-                gradient.addColorStop(1, '#606060');
+                gradient.addColorStop(0, nailTheme.light);
+                gradient.addColorStop(0.7, nailTheme.mid);
+                gradient.addColorStop(1, nailTheme.dark);
             }
 
             ctx.fillStyle = gradient;
@@ -315,24 +393,33 @@ const FieldRenderer = (() => {
         const br = radius * Math.min(scaleX, scaleY);
         const pulseScale = AnimationManager.getBallPulseScale();
         const r = br * pulseScale;
+        const ballTheme = BALL_THEMES[currentBallTheme] || BALL_THEMES.classic;
 
-        // Player color (default white)
-        const mainColor = playerColor || '#ffffff';
-        const lightColor = playerColor
-            ? adjustBrightness(playerColor, 60)
-            : '#ffffff';
-        const darkColor = playerColor
-            ? adjustBrightness(playerColor, -40)
-            : '#bdbdbd';
-        const midColor = playerColor
-            ? adjustBrightness(playerColor, 20)
-            : '#e0e0e0';
+        // Determine colors: use ball theme, or player color if set
+        const lightColor = playerColor ? adjustBrightness(playerColor, 60) : ballTheme.light;
+        const midColor = playerColor ? adjustBrightness(playerColor, 20) : ballTheme.mid;
+        const darkColor = playerColor ? adjustBrightness(playerColor, -40) : ballTheme.dark;
+        const patternColor = playerColor ? 'rgba(0,0,0,0.15)' : ballTheme.patternColor;
+        const glowCol = playerColor || ballTheme.glowColor;
+        const glowBlur = playerColor ? 12 : ballTheme.glowBlur;
 
         // Ball shadow
         ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         ctx.beginPath();
         ctx.ellipse(bx + 2, by + 3, r * 0.9, r * 0.5, 0, 0, Math.PI * 2);
         ctx.fill();
+
+        // Theme-specific outer glow (drawn before ball body)
+        if (glowCol && glowBlur > 0) {
+            ctx.save();
+            ctx.shadowColor = glowCol;
+            ctx.shadowBlur = glowBlur;
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.beginPath();
+            ctx.arc(bx, by, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
 
         // Ball body
         const gradient = ctx.createRadialGradient(
@@ -349,7 +436,7 @@ const FieldRenderer = (() => {
         ctx.fill();
 
         // Ball pattern (simple pentagon pattern)
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.strokeStyle = patternColor;
         ctx.lineWidth = 0.5;
         for (let i = 0; i < 5; i++) {
             const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
@@ -361,16 +448,16 @@ const FieldRenderer = (() => {
         }
 
         // Highlight
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.fillStyle = `rgba(255, 255, 255, ${ballTheme.highlightAlpha})`;
         ctx.beginPath();
         ctx.arc(bx - r * 0.25, by - r * 0.3, r * 0.2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Player color glow
-        if (playerColor) {
-            ctx.shadowColor = playerColor;
-            ctx.shadowBlur = 12;
-            ctx.strokeStyle = playerColor;
+        // Glow ring (theme or player color)
+        if (glowCol) {
+            ctx.shadowColor = glowCol;
+            ctx.shadowBlur = glowBlur;
+            ctx.strokeStyle = glowCol;
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.arc(bx, by, r, 0, Math.PI * 2);
@@ -457,14 +544,38 @@ const FieldRenderer = (() => {
         staticCanvas = null;
     }
 
+    /**
+     * Sets the ball theme
+     * @param {string} theme - Ball theme key
+     */
+    function setBallTheme(theme) {
+        if (BALL_THEMES[theme]) {
+            currentBallTheme = theme;
+        }
+    }
+
+    /**
+     * Sets the nail theme
+     * @param {string} theme - Nail theme key
+     */
+    function setNailTheme(theme) {
+        if (NAIL_THEMES[theme]) {
+            currentNailTheme = theme;
+        }
+    }
+
     return {
         setTheme,
+        setBallTheme,
+        setNailTheme,
         buildStaticField,
         drawStaticField,
         drawNails,
         drawBall,
         drawMiniPreview,
         invalidateCache,
-        THEMES
+        THEMES,
+        BALL_THEMES,
+        NAIL_THEMES
     };
 })();
