@@ -165,41 +165,27 @@ const SoundManager = (() => {
     }
 
     /**
-     * Plays the commentator "GOOOL!" sound (rising tone with echo)
+     * Plays the commentator "GOOOL!" sound using Web Speech API
      */
     function playCommentatorGoal() {
-        if (!audioContext || !sfxEnabled) return;
+        if (!sfxEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
         resume();
 
-        // Rising "GOOOL" tone with vibrato
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-        const lfo = audioContext.createOscillator();
-        const lfoGain = audioContext.createGain();
+        // Use Speech Synthesis for a realistic commentator voice
+        const msg = new SpeechSynthesisUtterance('Gooooooooooool!');
+        msg.lang = 'tr-TR';
+        msg.rate = 0.85; // Slightly slower for emphasis
+        msg.pitch = 1.3; // Higher pitch for excitement
+        msg.volume = 1.0;
 
-        // Vibrato using LFO
-        lfo.frequency.value = 6;
-        lfoGain.gain.value = 25;
-        lfo.connect(lfoGain);
-        lfoGain.connect(osc.frequency);
+        // Try to find a Turkish voice
+        const voices = window.speechSynthesis.getVoices();
+        const trVoice = voices.find(v => v.lang.includes('tr'));
+        if (trVoice) {
+            msg.voice = trVoice;
+        }
 
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(200, audioContext.currentTime);
-        osc.frequency.linearRampToValueAtTime(600, audioContext.currentTime + 0.8);
-        osc.frequency.linearRampToValueAtTime(400, audioContext.currentTime + 1.2);
-
-        gain.gain.setValueAtTime(0, audioContext.currentTime);
-        gain.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.2, audioContext.currentTime + 0.8);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.5);
-
-        osc.connect(gain);
-        gain.connect(masterGain);
-
-        lfo.start(audioContext.currentTime);
-        osc.start(audioContext.currentTime);
-        osc.stop(audioContext.currentTime + 1.5);
-        lfo.stop(audioContext.currentTime + 1.5);
+        window.speechSynthesis.speak(msg);
     }
 
     /**

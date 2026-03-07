@@ -395,13 +395,15 @@ const FieldRenderer = (() => {
         const r = br * pulseScale;
         const ballTheme = BALL_THEMES[currentBallTheme] || BALL_THEMES.classic;
 
-        // Determine colors: use ball theme, or player color if set
+        // Player color baz alınarak açık/koyu tonlar oluşturulur
         const lightColor = playerColor ? adjustBrightness(playerColor, 60) : ballTheme.light;
         const midColor = playerColor ? adjustBrightness(playerColor, 20) : ballTheme.mid;
         const darkColor = playerColor ? adjustBrightness(playerColor, -40) : ballTheme.dark;
-        const patternColor = playerColor ? 'rgba(0,0,0,0.15)' : ballTheme.patternColor;
-        const glowCol = playerColor || ballTheme.glowColor;
-        const glowBlur = playerColor ? 12 : ballTheme.glowBlur;
+        
+        // Tema efektleri her zaman korunur (örneğin Alev glowBlur: 18, Neon: 20)
+        const patternColor = ballTheme.patternColor;
+        const glowCol = (ballTheme.glowBlur > 0) ? (playerColor || ballTheme.glowColor) : null;
+        const glowBlur = ballTheme.glowBlur;
 
         // Ball shadow
         ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';

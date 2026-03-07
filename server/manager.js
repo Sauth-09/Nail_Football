@@ -9,6 +9,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const http = require('http');
 const { WebSocketServer } = require('ws');
 const path = require('path');
 const { spawn, exec } = require('child_process');
@@ -151,6 +152,15 @@ function startGameServer() {
         const text = data.toString();
         // Check for stats
         const statsMatch = text.match(/\[STATS\] (.*)/);
+        const portMatch = text.match(/\[INFO\] Oyun sunucusu baslatildi \(Port: (\d+)\)/);
+        
+        if (portMatch) {
+            state.port = parseInt(portMatch[1]);
+            state.networkUrl = `http://${getLocalIP()}:${state.port}`;
+            QRCode.toDataURL(state.networkUrl).then(qr => state.qrCodeData = qr).catch(()=>{});
+            broadcastState();
+        }
+        
         if (statsMatch) {
             try {
                 const s = JSON.parse(statsMatch[1]);
@@ -202,27 +212,46 @@ function stopGameServer() {
 // Web Sunucusu ve WebSocket
 // ═══════════════════════════════════════════
 
-const server = app.listen(MANAGER_PORT, '127.0.0.1', async () => {
-    state.networkUrl = `http://${getLocalIP()}:${GAME_PORT}`;
-    state.qrCodeData = await QRCode.toDataURL(state.networkUrl);
+function startManagerServer(port) {
+    const serverInstance = http.createServer(app);
 
-    logger.log('info', `Pano başladı -> http://localhost:${MANAGER_PORT}`);
-
-    // Tarayıcıyı aç
-    const startCmd = process.platform === 'win32' ? 'start' : 'open';
-    exec(`${startCmd} http://localhost:${MANAGER_PORT}`);
-
-    // Sistem tepsisi ikonu başlat
-    trayManager.init({
-        gameUrl: state.networkUrl,
-        managerPort: MANAGER_PORT,
-        onExit: shutdownAll
+    serverInstance.on('error', (err) => {
+        if (err.code === 'EADDRINUSE' || err.code === 'EACCES') {
+            logger.log('info', `Manager Port ${port} kullanımda, ${port + 1} deneniyor...`);
+            // EACCES durumunda synchronous fırlatılan hatadan dolayı sunucu nesnesini düzgün kapatıp yenisini açmamız gerekiyor
+            startManagerServer(port + 1);
+        } else {
+            logger.log('error', `Manager sunucusu başlatılamadı: ${err.message}`);
+        }
     });
 
-    checkFirewall();
-    checkAutostart();
-    startGameServer();
-});
+    serverInstance.listen(port, '127.0.0.1', async () => {
+        state.managerPort = port;
+        state.networkUrl = `http://${getLocalIP()}:${state.port}`;
+        state.qrCodeData = await QRCode.toDataURL(state.networkUrl);
+
+        logger.log('info', `Pano başladı -> http://localhost:${port}`);
+
+        // Tarayıcıyı aç
+        const startCmd = process.platform === 'win32' ? 'start' : 'open';
+        exec(`${startCmd} http://localhost:${port}`);
+
+        // Sistem tepsisi ikonu başlat
+        trayManager.init({
+            gameUrl: state.networkUrl,
+            managerPort: port,
+            onExit: shutdownAll
+        });
+
+        checkFirewall();
+        checkAutostart();
+        startGameServer();
+    });
+
+    return serverInstance;
+}
+
+const server = startManagerServer(MANAGER_PORT);
 
 const wss = new WebSocketServer({ server, path: '/manager-ws' });
 
