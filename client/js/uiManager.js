@@ -415,28 +415,23 @@ const UIManager = (() => {
             if (typeof ChallengeUI !== 'undefined') ChallengeUI.cancelChallenge();
         });
 
-        // ── Team Selection Cards ──
-        document.querySelectorAll('.team-card').forEach(card => {
-            card.addEventListener('click', () => {
+        // ── Team Selection Dropdowns ──
+        const teamSelectP1 = document.getElementById('team-select-p1');
+        if (teamSelectP1) {
+            teamSelectP1.addEventListener('change', () => {
                 SoundManager.playClick();
-                const teamId = card.dataset.team;
-                const player = parseInt(card.dataset.player);
-                const grid = document.getElementById(`team-grid-p${player}`);
-
-                if (grid) {
-                    // Toggle selection: if already selected, deselect
-                    const wasSelected = card.classList.contains('selected');
-                    grid.querySelectorAll('.team-card').forEach(c => c.classList.remove('selected'));
-
-                    if (!wasSelected) {
-                        card.classList.add('selected');
-                        if (typeof TeamManager !== 'undefined') TeamManager.selectTeam(player, teamId);
-                    } else {
-                        if (typeof TeamManager !== 'undefined') TeamManager.selectTeam(player, null);
-                    }
-                }
+                const teamId = teamSelectP1.value || null;
+                if (typeof TeamManager !== 'undefined') TeamManager.selectTeam(1, teamId);
             });
-        });
+        }
+        const teamSelectP2 = document.getElementById('team-select-p2');
+        if (teamSelectP2) {
+            teamSelectP2.addEventListener('change', () => {
+                SoundManager.playClick();
+                const teamId = teamSelectP2.value || null;
+                if (typeof TeamManager !== 'undefined') TeamManager.selectTeam(2, teamId);
+            });
+        }
 
         // ── Joker Buttons ──
         document.querySelectorAll('.joker-btn').forEach(btn => {

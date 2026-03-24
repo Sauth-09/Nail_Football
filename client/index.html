@@ -155,65 +155,29 @@
                     <option value="ice">Buz 🔵</option>
                 </select>
             </div>
+            <div class="setting-row" style="justify-content: center; gap: 10px; margin-top: 8px; flex-wrap: wrap;">
+                <label style="font-weight: 600;">🔵 Takım 1:</label>
+                <select id="team-select-p1" class="menu-select" style="padding: 5px; border-radius: 5px; width: 150px;">
+                    <option value="" selected>Seçme ❌</option>
+                    <option value="galatasaray">Galatasaray 🦁</option>
+                    <option value="fenerbahce">Fenerbahçe 🐦</option>
+                    <option value="besiktas">Beşiktaş 🦅</option>
+                    <option value="trabzonspor">Trabzonspor ⚓</option>
+                    <option value="milliTakim">Milli Takım 🇹🇷</option>
+                </select>
+                <label style="font-weight: 600;">🔴 Takım 2:</label>
+                <select id="team-select-p2" class="menu-select" style="padding: 5px; border-radius: 5px; width: 150px;">
+                    <option value="" selected>Seçme ❌</option>
+                    <option value="galatasaray">Galatasaray 🦁</option>
+                    <option value="fenerbahce">Fenerbahçe 🐦</option>
+                    <option value="besiktas">Beşiktaş 🦅</option>
+                    <option value="trabzonspor">Trabzonspor ⚓</option>
+                    <option value="milliTakim">Milli Takım 🇹🇷</option>
+                </select>
+            </div>
+            <p class="setting-desc" style="font-size: 0.8em; opacity: 0.6; margin: 4px 0 0; text-align: center;">Takım seçersen saha kenarında taraftarlar belirir!</p>
         </div>
         <button id="btn-start-game" class="menu-btn primary start-btn" style="margin-top: 20px;">OYUNU BAŞLAT</button>
-
-        <!-- Team Selection -->
-        <div class="team-select-section" style="margin-top: 20px;">
-            <h3 style="text-align: center; color: #ccd6f6; margin-bottom: 10px;">🏟️ Takım Seçimi <span style="font-size: 0.7em; opacity: 0.6;">(İsteğe bağlı)</span></h3>
-            <div class="team-select-row">
-                <div class="team-select-player">
-                    <span class="team-player-label">🔵 Oyuncu 1</span>
-                    <div id="team-grid-p1" class="team-select-grid">
-                        <button class="team-card" data-team="galatasaray" data-player="1">
-                            <span class="team-emoji">🦁</span>
-                            <span class="team-short">GS</span>
-                        </button>
-                        <button class="team-card" data-team="fenerbahce" data-player="1">
-                            <span class="team-emoji">🐦</span>
-                            <span class="team-short">FB</span>
-                        </button>
-                        <button class="team-card" data-team="besiktas" data-player="1">
-                            <span class="team-emoji">🦅</span>
-                            <span class="team-short">BJK</span>
-                        </button>
-                        <button class="team-card" data-team="trabzonspor" data-player="1">
-                            <span class="team-emoji">⚓</span>
-                            <span class="team-short">TS</span>
-                        </button>
-                        <button class="team-card" data-team="milliTakim" data-player="1">
-                            <span class="team-emoji">🇹🇷</span>
-                            <span class="team-short">TR</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="team-select-player">
-                    <span class="team-player-label">🔴 Oyuncu 2</span>
-                    <div id="team-grid-p2" class="team-select-grid">
-                        <button class="team-card" data-team="galatasaray" data-player="2">
-                            <span class="team-emoji">🦁</span>
-                            <span class="team-short">GS</span>
-                        </button>
-                        <button class="team-card" data-team="fenerbahce" data-player="2">
-                            <span class="team-emoji">🐦</span>
-                            <span class="team-short">FB</span>
-                        </button>
-                        <button class="team-card" data-team="besiktas" data-player="2">
-                            <span class="team-emoji">🦅</span>
-                            <span class="team-short">BJK</span>
-                        </button>
-                        <button class="team-card" data-team="trabzonspor" data-player="2">
-                            <span class="team-emoji">⚓</span>
-                            <span class="team-short">TS</span>
-                        </button>
-                        <button class="team-card" data-team="milliTakim" data-player="2">
-                            <span class="team-emoji">🇹🇷</span>
-                            <span class="team-short">TR</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
