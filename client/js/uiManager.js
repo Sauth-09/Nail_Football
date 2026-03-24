@@ -414,6 +414,64 @@ const UIManager = (() => {
         if (btnChallengeCancelWaiting) btnChallengeCancelWaiting.addEventListener('click', () => {
             if (typeof ChallengeUI !== 'undefined') ChallengeUI.cancelChallenge();
         });
+
+        // ── Team Selection Cards ──
+        document.querySelectorAll('.team-card').forEach(card => {
+            card.addEventListener('click', () => {
+                SoundManager.playClick();
+                const teamId = card.dataset.team;
+                const player = parseInt(card.dataset.player);
+                const grid = document.getElementById(`team-grid-p${player}`);
+
+                if (grid) {
+                    // Toggle selection: if already selected, deselect
+                    const wasSelected = card.classList.contains('selected');
+                    grid.querySelectorAll('.team-card').forEach(c => c.classList.remove('selected'));
+
+                    if (!wasSelected) {
+                        card.classList.add('selected');
+                        if (typeof TeamManager !== 'undefined') TeamManager.selectTeam(player, teamId);
+                    } else {
+                        if (typeof TeamManager !== 'undefined') TeamManager.selectTeam(player, null);
+                    }
+                }
+            });
+        });
+
+        // ── Joker Buttons ──
+        document.querySelectorAll('.joker-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (typeof JokerManager === 'undefined' || typeof Game === 'undefined') return;
+                if (Game.getGameState() !== 'direction') return;
+
+                const jokerType = btn.dataset.joker;
+                const currentPlayer = Game.getCurrentPlayer();
+
+                if (!JokerManager.hasJokerAvailable(currentPlayer)) return;
+
+                SoundManager.playClick();
+
+                if (jokerType === 'destroyNail') {
+                    // Activate joker first
+                    const success = JokerManager.activateJoker(currentPlayer, jokerType);
+                    if (!success) return;
+
+                    // Enter nail select mode
+                    enterNailSelectMode();
+                } else {
+                    // Activate joker (flamingBall or freezeGoalkeeper)
+                    const success = JokerManager.activateJoker(currentPlayer, jokerType);
+                    if (!success) return;
+
+                    // Show notification
+                    const jokerInfo = JokerManager.getJokerTypes()[jokerType];
+                    showNotification(`${jokerInfo.emoji} ${jokerInfo.name} aktif!`);
+
+                    // Hide joker buttons
+                    hideJokerButtons();
+                }
+            });
+        });
     }
 
     /**
@@ -1320,6 +1378,121 @@ const UIManager = (() => {
         return selectedFieldId;
     }
 
+    // ═══════════════════════════════════════════
+    // Joker UI
+    // ═══════════════════════════════════════════
+
+    /**
+     * Shows joker buttons for the current player (if they have joker available)
+     * @param {number} player - Current player (1 or 2)
+     */
+    function showJokerButtons(player) {
+        const container = document.getElementById('joker-buttons');
+        if (!container || typeof JokerManager === 'undefined') return;
+
+        if (JokerManager.hasJokerAvailable(player)) {
+            container.style.display = 'flex';
+            // Reset used state on buttons
+            container.querySelectorAll('.joker-btn').forEach(btn => {
+                btn.classList.remove('used');
+            });
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    /**
+     * Hides joker buttons
+     */
+    function hideJokerButtons() {
+        const container = document.getElementById('joker-buttons');
+        if (container) container.style.display = 'none';
+    }
+
+    /**
+     * Enters nail selection mode - player clicks on a nail to destroy it
+     */
+    function enterNailSelectMode() {
+        const canvasContainer = document.getElementById('canvas-container');
+        const canvas = document.getElementById('game-canvas');
+        if (!canvasContainer || !canvas) return;
+
+        // Add visual indicators
+        canvasContainer.classList.add('nail-select-mode');
+
+        // Show hint
+        let hint = document.getElementById('nail-select-hint');
+        if (!hint) {
+            hint = document.createElement('div');
+            hint.id = 'nail-select-hint';
+            hint.className = 'nail-select-hint';
+            canvasContainer.appendChild(hint);
+        }
+        hint.textContent = '📌 Yok etmek istediğin çiviye tıkla!';
+        hint.style.display = 'block';
+
+        // Hide joker buttons
+        hideJokerButtons();
+
+        // Enter nail select mode in JokerManager
+        JokerManager.enterNailSelectMode((nailIndex) => {
+            // Nail selected - remove it from field
+            const field = Game.getCurrentField();
+            if (field && typeof PhysicsClient !== 'undefined') {
+                PhysicsClient.removeNail(field, nailIndex);
+
+                // Rebuild field visuals
+                GameRenderer.setField(field);
+                GameRenderer.setBallPosition(Game.getBallPos().x, Game.getBallPos().y);
+
+                showNotification('📌 Çivi yok edildi!');
+                SoundManager.playClick();
+            }
+
+            // Clean up UI
+            canvasContainer.classList.remove('nail-select-mode');
+            hint.style.display = 'none';
+        });
+
+        // Canvas click handler for selecting nail
+        const nailClickHandler = (e) => {
+            if (!JokerManager.isNailSelectMode()) {
+                canvas.removeEventListener('click', nailClickHandler);
+                return;
+            }
+
+            const field = Game.getCurrentField();
+            if (!field) return;
+
+            // Convert click to field coordinates
+            const fieldPos = GameRenderer.canvasToField(e.clientX, e.clientY);
+
+            // Find nearest nail
+            let nearestIndex = -1;
+            let nearestDist = Infinity;
+
+            for (let i = 0; i < field.nails.length; i++) {
+                const nail = field.nails[i];
+                const dx = fieldPos.x - nail.x;
+                const dy = fieldPos.y - nail.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearestIndex = i;
+                }
+            }
+
+            // Only select if close enough (within 3x nail radius)
+            if (nearestIndex >= 0 && nearestDist < field.nailRadius * 3) {
+                JokerManager.selectNail(nearestIndex);
+                canvas.removeEventListener('click', nailClickHandler);
+            }
+        };
+
+        canvas.addEventListener('click', nailClickHandler);
+    }
+
     return {
         init,
         showScreen,
@@ -1341,6 +1514,8 @@ const UIManager = (() => {
         showGameOverElo,
         showNotification,
         showAIMessage,
-        loadActiveMatches
+        loadActiveMatches,
+        showJokerButtons,
+        hideJokerButtons
     };
 })();

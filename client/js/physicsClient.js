@@ -66,20 +66,39 @@ const PhysicsClient = (() => {
     }
 
     /**
+     * Removes a nail from the field by index
+     * @param {Object} field - Field configuration
+     * @param {number} nailIndex - Index of nail to remove
+     * @returns {boolean} Whether removal was successful
+     */
+    function removeNail(field, nailIndex) {
+        if (!field || !field.nails || nailIndex < 0 || nailIndex >= field.nails.length) {
+            return false;
+        }
+        field.nails.splice(nailIndex, 1);
+        console.log(`[PHYSICS-C] Nail ${nailIndex} removed. Remaining: ${field.nails.length}`);
+        return true;
+    }
+
+    /**
      * Simulates a shot locally (for local mode)
      * @param {Object} field - Field configuration
      * @param {number} angle - Shot angle in radians
      * @param {number} power - Shot power (0-1)
      * @param {Object} ballPos - Ball start position {x, y}
-     * @param {Object} [options] - Optional settings (goalkeeperEnabled, shotStartTime)
+     * @param {Object} [options] - Optional settings (goalkeeperEnabled, shotStartTime, jokerOptions)
      * @returns {Object} Result with trajectory and collision events
      */
     function simulateShot(field, angle, power, ballPos, options = {}) {
+        // Apply joker power multiplier if active
+        const joker = options.jokerOptions || {};
+        const powerMult = joker.powerMultiplier || 1;
+
         const ball = {
             x: ballPos.x,
             y: ballPos.y,
-            vx: Math.cos(angle) * power * field.maxShotPower,
-            vy: Math.sin(angle) * power * field.maxShotPower,
+            vx: Math.cos(angle) * power * field.maxShotPower * powerMult,
+            vy: Math.sin(angle) * power * field.maxShotPower * powerMult,
             radius: field.ballRadius
         };
 
@@ -100,7 +119,8 @@ const PhysicsClient = (() => {
 
         // shotStartTime defaults to 0 if not provided
         const shotStartTime = options.shotStartTime || 0;
-        const isGkEnabled = options.goalkeeperEnabled === true;
+        const isGkEnabled = options.goalkeeperEnabled === true && !joker.skipGoalkeeper;
+        const isGkFrozen = joker.freezeGoalkeeper === true;
 
         while (frame < MAX_FRAMES) {
             frame++;
@@ -228,7 +248,7 @@ const PhysicsClient = (() => {
             // Goalkeeper collisions
             if (isGkEnabled) {
                 const currentTimeMs = shotStartTime + (frame * DT * 1000);
-                const currentY = getGoalkeeperY(currentTimeMs, field, gkBaseY);
+                const currentY = isGkFrozen ? gkBaseY : getGoalkeeperY(currentTimeMs, field, gkBaseY);
 
                 const gkLeft = { x: gkLeftX, y: currentY, width: gkWidth, height: gkHeight };
                 const gkRight = { x: gkRightX, y: currentY, width: gkWidth, height: gkHeight };
@@ -384,6 +404,7 @@ const PhysicsClient = (() => {
         advancePlayback,
         isPlaying,
         stopPlayback,
-        getGoalkeeperY
+        getGoalkeeperY,
+        removeNail
     };
 })();

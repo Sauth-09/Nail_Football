@@ -502,6 +502,7 @@ body {
 
 #field-select {
     background: #1a1a2e;
+    overflow-y: auto;
 }
 
 .field-gallery-wrapper {
@@ -2061,5 +2062,306 @@ body {
     
     .btn-icon {
         font-size: 1.1rem;
+    }
+}
+
+/* ═══════════════════════════════════════════════ */
+/* Joker Buttons                                    */
+/* ═══════════════════════════════════════════════ */
+
+.joker-buttons {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-right: 8px;
+}
+
+.joker-btn {
+    width: 36px;
+    height: 36px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    background: rgba(22, 33, 62, 0.9);
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    position: relative;
+    animation: jokerPulse 2s ease-in-out infinite;
+}
+
+.joker-btn:hover {
+    transform: scale(1.2);
+    border-color: #f1c40f;
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.5);
+}
+
+.joker-btn:active {
+    transform: scale(0.95);
+}
+
+.joker-btn[data-joker="flamingBall"] {
+    border-color: rgba(255, 69, 0, 0.6);
+    animation-delay: 0s;
+}
+.joker-btn[data-joker="flamingBall"]:hover {
+    border-color: #FF4500;
+    box-shadow: 0 0 15px rgba(255, 69, 0, 0.6);
+}
+
+.joker-btn[data-joker="freezeGoalkeeper"] {
+    border-color: rgba(0, 188, 212, 0.6);
+    animation-delay: 0.3s;
+}
+.joker-btn[data-joker="freezeGoalkeeper"]:hover {
+    border-color: #00BCD4;
+    box-shadow: 0 0 15px rgba(0, 188, 212, 0.6);
+}
+
+.joker-btn[data-joker="destroyNail"] {
+    border-color: rgba(156, 39, 176, 0.6);
+    animation-delay: 0.6s;
+}
+.joker-btn[data-joker="destroyNail"]:hover {
+    border-color: #9C27B0;
+    box-shadow: 0 0 15px rgba(156, 39, 176, 0.6);
+}
+
+.joker-btn.used {
+    opacity: 0.3;
+    pointer-events: none;
+    animation: none;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes jokerPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.1); }
+    50% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.3); }
+}
+
+/* Joker info tooltip */
+.joker-active-info {
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: fadeInUp 0.3s ease;
+    z-index: 100;
+}
+
+/* Nail select mode cursor */
+.nail-select-mode {
+    cursor: crosshair !important;
+}
+
+.nail-select-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(156, 39, 176, 0.9);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    z-index: 50;
+    animation: fadeInUp 0.3s ease;
+    pointer-events: none;
+    text-align: center;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* Team Selection Cards                             */
+/* ═══════════════════════════════════════════════ */
+
+.team-select-section {
+    width: calc(100% - 40px);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.team-select-row {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.team-select-player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.team-player-label {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #ccd6f6;
+}
+
+.team-select-grid {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.team-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    background: rgba(22, 33, 62, 0.8);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 48px;
+}
+
+.team-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.team-card.selected {
+    border-color: #f1c40f;
+    background: rgba(241, 196, 15, 0.15);
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.3);
+    transform: scale(1.08);
+}
+
+.team-emoji {
+    font-size: 1.4rem;
+}
+
+.team-short {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #8892b0;
+    letter-spacing: 1px;
+}
+
+.team-card.selected .team-short {
+    color: #f1c40f;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* Fan / Supporter Containers                       */
+/* ═══════════════════════════════════════════════ */
+
+.fans-container {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.fans-container-left {
+    left: 4px;
+}
+
+.fans-container-right {
+    right: 4px;
+}
+
+.fan-row {
+    display: flex;
+    gap: 1px;
+    align-items: flex-end;
+}
+
+.fan-row-1 {
+    transform: scale(0.85);
+    opacity: 0.8;
+}
+
+.fan-person {
+    width: 20px;
+    height: 32px;
+    transition: transform 0.3s ease;
+}
+
+.fan-svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Fan arm animations (idle sway) */
+.fan-arm-left, .fan-arm-right {
+    transform-origin: 6px 13px;
+}
+
+/* Goal celebration animation */
+.fans-container.celebrating .fan-person {
+    animation: fanCelebrate 0.6s ease-in-out;
+    animation-fill-mode: forwards;
+}
+
+.fans-container.celebrating .fan-arm-left {
+    animation: armWaveLeft 0.4s ease-in-out infinite alternate;
+}
+
+.fans-container.celebrating .fan-arm-right {
+    animation: armWaveRight 0.4s ease-in-out infinite alternate;
+}
+
+.fans-container.celebrating .fan-person:nth-child(1) { animation-delay: 0s; }
+.fans-container.celebrating .fan-person:nth-child(2) { animation-delay: 0.05s; }
+.fans-container.celebrating .fan-person:nth-child(3) { animation-delay: 0.1s; }
+.fans-container.celebrating .fan-person:nth-child(4) { animation-delay: 0.15s; }
+
+@keyframes fanCelebrate {
+    0% { transform: translateY(0) scale(1); }
+    30% { transform: translateY(-8px) scale(1.1); }
+    60% { transform: translateY(-5px) scale(1.05); }
+    100% { transform: translateY(-4px) scale(1.05); }
+}
+
+@keyframes armWaveLeft {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(-40deg); }
+}
+
+@keyframes armWaveRight {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(40deg); }
+}
+
+/* Responsive fan sizing */
+@media (max-width: 600px) {
+    .fan-person {
+        width: 16px;
+        height: 26px;
+    }
+}
+
+@media (max-width: 400px) {
+    .fan-person {
+        width: 14px;
+        height: 22px;
+    }
+    .fans-container-left {
+        left: 2px;
+    }
+    .fans-container-right {
+        right: 2px;
     }
 }

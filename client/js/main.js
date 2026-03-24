@@ -181,6 +181,9 @@ const Game = (() => {
         gameActive = true;
         shotAngle = null;
 
+        // Reset jokers for new game
+        if (typeof JokerManager !== 'undefined') JokerManager.resetJokers();
+
         // Initialize AI if vs_ai
         if (gameMode === 'vs_ai') {
             aiPlayer = new AIPlayer(aiDifficulty, 'right');
@@ -227,6 +230,18 @@ const Game = (() => {
 
             // Start ball pulse in direction phase
             AnimationManager.setBallPulse(true);
+
+            // Initialize fans based on team selection
+            if (typeof FansRenderer !== 'undefined' && typeof TeamManager !== 'undefined') {
+                const team1 = TeamManager.getTeam(1);
+                const team2 = TeamManager.getTeam(2);
+                FansRenderer.init(team1, team2);
+            }
+
+            // Show joker buttons if available
+            if (typeof JokerManager !== 'undefined') {
+                UIManager.showJokerButtons(currentPlayer);
+            }
 
             // Start game loop
             startGameLoop();
@@ -441,9 +456,13 @@ const Game = (() => {
             // Apply friction setting override
             if (settings.friction) currentField.friction = settings.friction;
 
+            // Get joker options if active
+            const jokerOptions = (typeof JokerManager !== 'undefined') ? JokerManager.getJokerShotOptions() : {};
+
             const options = {
                 goalkeeperEnabled: settings.goalkeeperEnabled,
-                shotStartTime: shotStartTime
+                shotStartTime: shotStartTime,
+                jokerOptions: jokerOptions
             };
 
             // Inform renderer
@@ -451,6 +470,9 @@ const Game = (() => {
 
             // Simulate locally
             const result = PhysicsClient.simulateShot(currentField, angle, power, ballPos, options);
+
+            // Clear active joker after shot is executed
+            if (typeof JokerManager !== 'undefined') JokerManager.clearActiveJoker();
 
             // Start playback
             PhysicsClient.startPlayback(result, handleCollisionEvent, handleShotComplete);
@@ -542,6 +564,11 @@ const Game = (() => {
             const goalY = currentField.fieldHeight / 2;
             AnimationManager.triggerGoalAnimation(scorer, goalX, goalY);
 
+            // Fans celebration
+            if (typeof FansRenderer !== 'undefined') {
+                FansRenderer.onGoal(scorer);
+            }
+
             // Goal effects: slow-mo and net rip
             EffectsManager.triggerSlowMo(45, 0.3);
             EffectsManager.triggerNetRip(goalScored.side, currentField.fieldWidth, currentField.fieldHeight);
@@ -609,6 +636,11 @@ const Game = (() => {
         const settings = UIManager.getSettings();
         if (settings.vibration && navigator.vibrate) {
             navigator.vibrate(50);
+        }
+
+        // Update joker buttons
+        if (typeof JokerManager !== 'undefined') {
+            UIManager.showJokerButtons(currentPlayer);
         }
 
         checkAITurn();
@@ -722,6 +754,12 @@ const Game = (() => {
             gameActive = true;
             shotAngle = null;
 
+            // Reset jokers
+            if (typeof JokerManager !== 'undefined') JokerManager.resetJokers();
+
+            // Reset fans
+            if (typeof FansRenderer !== 'undefined') FansRenderer.reset();
+
             const settings = UIManager.getSettings();
             matchTimer = settings.matchTime || 0;
             lastTimerTick = Date.now();
@@ -756,6 +794,12 @@ const Game = (() => {
         InputHandler.setPhase('idle');
         NetworkManager.disconnect();
         aiPlayer = null; // Reset AI on stop
+
+        // Clean up fans
+        if (typeof FansRenderer !== 'undefined') FansRenderer.destroy();
+
+        // Reset team selection
+        if (typeof TeamManager !== 'undefined') TeamManager.resetSelection();
     }
 
     // ═══════════════════════════════════════════
@@ -1134,7 +1178,12 @@ const Game = (() => {
         setAIDifficulty,
         startGame,
         restart,
-        stop
+        stop,
+        // Exposed for joker nail-select mode
+        getCurrentField: () => currentField,
+        getCurrentPlayer: () => currentPlayer,
+        getGameState: () => gameState,
+        getBallPos: () => ballPos
     };
 })();
 

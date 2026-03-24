@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
@@ -157,6 +157,63 @@
             </div>
         </div>
         <button id="btn-start-game" class="menu-btn primary start-btn" style="margin-top: 20px;">OYUNU BAŞLAT</button>
+
+        <!-- Team Selection -->
+        <div class="team-select-section" style="margin-top: 20px;">
+            <h3 style="text-align: center; color: #ccd6f6; margin-bottom: 10px;">🏟️ Takım Seçimi <span style="font-size: 0.7em; opacity: 0.6;">(İsteğe bağlı)</span></h3>
+            <div class="team-select-row">
+                <div class="team-select-player">
+                    <span class="team-player-label">🔵 Oyuncu 1</span>
+                    <div id="team-grid-p1" class="team-select-grid">
+                        <button class="team-card" data-team="galatasaray" data-player="1">
+                            <span class="team-emoji">🦁</span>
+                            <span class="team-short">GS</span>
+                        </button>
+                        <button class="team-card" data-team="fenerbahce" data-player="1">
+                            <span class="team-emoji">🐦</span>
+                            <span class="team-short">FB</span>
+                        </button>
+                        <button class="team-card" data-team="besiktas" data-player="1">
+                            <span class="team-emoji">🦅</span>
+                            <span class="team-short">BJK</span>
+                        </button>
+                        <button class="team-card" data-team="trabzonspor" data-player="1">
+                            <span class="team-emoji">⚓</span>
+                            <span class="team-short">TS</span>
+                        </button>
+                        <button class="team-card" data-team="milliTakim" data-player="1">
+                            <span class="team-emoji">🇹🇷</span>
+                            <span class="team-short">TR</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="team-select-player">
+                    <span class="team-player-label">🔴 Oyuncu 2</span>
+                    <div id="team-grid-p2" class="team-select-grid">
+                        <button class="team-card" data-team="galatasaray" data-player="2">
+                            <span class="team-emoji">🦁</span>
+                            <span class="team-short">GS</span>
+                        </button>
+                        <button class="team-card" data-team="fenerbahce" data-player="2">
+                            <span class="team-emoji">🐦</span>
+                            <span class="team-short">FB</span>
+                        </button>
+                        <button class="team-card" data-team="besiktas" data-player="2">
+                            <span class="team-emoji">🦅</span>
+                            <span class="team-short">BJK</span>
+                        </button>
+                        <button class="team-card" data-team="trabzonspor" data-player="2">
+                            <span class="team-emoji">⚓</span>
+                            <span class="team-short">TS</span>
+                        </button>
+                        <button class="team-card" data-team="milliTakim" data-player="2">
+                            <span class="team-emoji">🇹🇷</span>
+                            <span class="team-short">TR</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
@@ -483,6 +540,12 @@
                 </div>
             </div>
             <div class="hud-right">
+                <!-- Joker Buttons -->
+                <div id="joker-buttons" class="joker-buttons" style="display: none;">
+                    <button class="joker-btn" data-joker="flamingBall" title="Alevli Top - Çok hızlı, kaleciden geçer!">🔥</button>
+                    <button class="joker-btn" data-joker="freezeGoalkeeper" title="Kaleci Dondur - Kaleci bu atışta donar!">❄️</button>
+                    <button class="joker-btn" data-joker="destroyNail" title="Çivi Yok Et - Bir çiviyi kaldır!">📌</button>
+                </div>
                 <button id="btn-sound-toggle" class="icon-btn">🔊</button>
                 <button id="btn-fullscreen" class="icon-btn">⛶</button>
             </div>
@@ -837,6 +900,9 @@
     <script src="js/ai/aiPlayer.js?v=v1.5"></script>
 
     <!-- Core Modules -->
+    <script src="js/teamManager.js?v=v1.6"></script>
+    <script src="js/jokerManager.js?v=v1.6"></script>
+    <script src="js/fansRenderer.js?v=v1.6"></script>
     <script src="js/soundManager.js?v=v1.5"></script>
     <script src="js/animationManager.js?v=v1.5"></script>
     <script src="js/effectsManager.js?v=v1.5"></script>
