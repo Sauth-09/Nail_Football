@@ -19,10 +19,10 @@ const FansRenderer = (() => {
     // ═══════════════════════════════════════════
 
     /** Number of fans per row */
-    const FANS_PER_ROW = 6;
+    const FANS_PER_ROW = 3;
 
     /** Number of rows for depth */
-    const ROWS = 4;
+    const ROWS = 5;
 
     /** Total fans per side */
     const FANS_PER_SIDE = FANS_PER_ROW * ROWS;
@@ -149,8 +149,8 @@ const FansRenderer = (() => {
             return;
         }
 
-        const gameScreen = document.getElementById('game-screen');
-        if (!gameScreen) return;
+        const canvasContainer = document.getElementById('canvas-container');
+        if (!canvasContainer) return;
 
         // Create left fans
         if (leftTeam) {
@@ -163,7 +163,7 @@ const FansRenderer = (() => {
             leftContainer.appendChild(backdrop);
             
             buildFans(leftContainer, leftTeam.colors[0], leftTeam.colors[1]);
-            gameScreen.appendChild(leftContainer);
+            canvasContainer.appendChild(leftContainer);
         }
 
         // Create right fans
@@ -177,7 +177,7 @@ const FansRenderer = (() => {
             rightContainer.appendChild(backdrop);
             
             buildFans(rightContainer, rightTeam.colors[0], rightTeam.colors[1]);
-            gameScreen.appendChild(rightContainer);
+            canvasContainer.appendChild(rightContainer);
         }
 
         initialized = true;

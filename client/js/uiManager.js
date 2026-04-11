@@ -1405,6 +1405,8 @@ const UIManager = (() => {
     }
 
     /**
+     * Enters nail selection mode - player clicks on a nail to destroy it
+     */
     function enterNailSelectMode() {
         const canvasContainer = document.getElementById('canvas-container');
         const canvas = document.getElementById('game-canvas');
