@@ -1,8 +1,13 @@
 /**
  * fansRenderer.js - Stadium Fan/Supporter Renderer
  * 
- * Renders team-colored fans on left and right sides of the game field.
- * Fans stand up and celebrate when their team scores.
+ * Renders team-colored fans in stadium-style tribune sections on left and right
+ * sides of the game field. Features:
+ * - Multiple rows with depth perspective
+ * - Idle sway animations for life-like feel
+ * - Goal celebrations with jumping, arm waving, confetti
+ * - Stadium tribune backdrop with gradient stands
+ * 
  * Uses HTML/CSS elements (not canvas) for smooth animations.
  */
 
@@ -13,11 +18,14 @@ const FansRenderer = (() => {
     // Constants
     // ═══════════════════════════════════════════
 
-    /** Number of fans per side */
-    const FANS_PER_SIDE = 8;
+    /** Number of fans per row */
+    const FANS_PER_ROW = 6;
 
-    /** Number of rows */
-    const ROWS = 2;
+    /** Number of rows for depth */
+    const ROWS = 4;
+
+    /** Total fans per side */
+    const FANS_PER_SIDE = FANS_PER_ROW * ROWS;
 
     // ═══════════════════════════════════════════
     // State
@@ -32,37 +40,70 @@ const FansRenderer = (() => {
     /** @type {boolean} Whether fans are initialized */
     let initialized = false;
 
+    /** @type {number|null} Idle animation interval */
+    let idleInterval = null;
+
     // ═══════════════════════════════════════════
     // Fan Creation
     // ═══════════════════════════════════════════
 
     /**
-     * Creates a single fan SVG element
+     * Creates a single fan SVG element with variety
      * @param {string} shirtColor - Primary color
      * @param {string} detailColor - Secondary color
      * @param {number} index - Fan index for variation
+     * @param {number} row - Row index (0 = front, higher = back)
      * @returns {HTMLElement}
      */
-    function createFanElement(shirtColor, detailColor, index) {
+    function createFanElement(shirtColor, detailColor, index, row) {
         const fan = document.createElement('div');
         fan.className = 'fan-person';
-        
-        // Slight random variation for natural look
-        const heightVar = 0.85 + Math.random() * 0.3;
-        const delay = Math.random() * 0.3;
+        fan.dataset.row = row;
+
+        // Random variation for natural look
+        const heightVar = 0.82 + Math.random() * 0.36;
+        const delay = Math.random() * 2;
+        const swaySpeed = 2.5 + Math.random() * 2;
         fan.style.setProperty('--fan-height-var', heightVar);
         fan.style.setProperty('--fan-anim-delay', `${delay}s`);
+        fan.style.setProperty('--fan-sway-speed', `${swaySpeed}s`);
 
-        // Alternate between colors for variety
-        const mainColor = index % 3 === 0 ? detailColor : shirtColor;
-        const altColor = index % 3 === 0 ? shirtColor : detailColor;
+        // Color variety - mix between team colors and some neutral variations
+        const colorVariant = index % 5;
+        let mainColor, altColor;
+        switch (colorVariant) {
+            case 0: mainColor = shirtColor; altColor = detailColor; break;
+            case 1: mainColor = detailColor; altColor = shirtColor; break;
+            case 2: mainColor = shirtColor; altColor = '#ffffff'; break;
+            case 3: mainColor = detailColor; altColor = '#333333'; break;
+            default: mainColor = shirtColor; altColor = detailColor; break;
+        }
+
+        // Skin tone variety
+        const skinTones = ['#FFCC99', '#F5D0A9', '#D2A67F', '#C68642', '#8D5524'];
+        const skinColor = skinTones[index % skinTones.length];
+
+        // Some fans have accessories (scarves, hats)
+        const hasScarf = index % 4 === 0;
+        const hasHat = index % 7 === 0;
+
+        let accessorySVG = '';
+        if (hasScarf) {
+            accessorySVG = `<rect x="7" y="10" width="10" height="2" rx="1" fill="${altColor}" opacity="0.9"/>`;
+        }
+        if (hasHat) {
+            accessorySVG = `<rect x="7" y="1" width="10" height="3" rx="1.5" fill="${mainColor}" opacity="0.95"/>`;
+        }
 
         fan.innerHTML = `
             <svg viewBox="0 0 24 40" class="fan-svg">
                 <!-- Head -->
-                <circle cx="12" cy="6" r="4.5" fill="#FFCC99" stroke="#E0A870" stroke-width="0.5"/>
+                <circle cx="12" cy="6" r="4.5" fill="${skinColor}" stroke="#B8860B" stroke-width="0.3"/>
+                ${accessorySVG}
                 <!-- Body / Shirt -->
                 <rect x="6" y="11" width="12" height="12" rx="2" fill="${mainColor}" stroke="${altColor}" stroke-width="0.8"/>
+                <!-- Number on shirt -->
+                <text x="12" y="20" text-anchor="middle" fill="${altColor}" font-size="5" font-weight="bold" opacity="0.7">${(index % 11) + 1}</text>
                 <!-- Arms -->
                 <line x1="6" y1="13" x2="2" y2="20" stroke="${mainColor}" stroke-width="2.5" stroke-linecap="round" class="fan-arm-left"/>
                 <line x1="18" y1="13" x2="22" y2="20" stroke="${mainColor}" stroke-width="2.5" stroke-linecap="round" class="fan-arm-right"/>
@@ -79,6 +120,24 @@ const FansRenderer = (() => {
     }
 
     /**
+     * Creates the tribune backdrop element
+     * @param {string} side - 'left' or 'right'
+     * @param {string} color1 - Primary team color
+     * @param {string} color2 - Secondary team color
+     * @returns {HTMLElement}
+     */
+    function createTribuneBackdrop(side, color1, color2) {
+        const backdrop = document.createElement('div');
+        backdrop.className = `tribune-backdrop tribune-${side}`;
+        backdrop.style.background = `linear-gradient(180deg, 
+            ${color1}33 0%, 
+            ${color1}22 30%, 
+            ${color2}15 60%, 
+            rgba(20,20,30,0.8) 100%)`;
+        return backdrop;
+    }
+
+    /**
      * Initializes fans on both sides
      * @param {Object|null} leftTeam - Left team data from TeamManager
      * @param {Object|null} rightTeam - Right team data from TeamManager
@@ -87,7 +146,6 @@ const FansRenderer = (() => {
         destroy(); // Clean up any previous fans
 
         if (!leftTeam && !rightTeam) {
-            // No teams selected, no fans
             return;
         }
 
@@ -99,6 +157,11 @@ const FansRenderer = (() => {
             leftContainer = document.createElement('div');
             leftContainer.className = 'fans-container fans-container-left';
             leftContainer.id = 'fans-left';
+            
+            // Add tribune backdrop
+            const backdrop = createTribuneBackdrop('left', leftTeam.colors[0], leftTeam.colors[1]);
+            leftContainer.appendChild(backdrop);
+            
             buildFans(leftContainer, leftTeam.colors[0], leftTeam.colors[1]);
             gameScreen.appendChild(leftContainer);
         }
@@ -108,11 +171,20 @@ const FansRenderer = (() => {
             rightContainer = document.createElement('div');
             rightContainer.className = 'fans-container fans-container-right';
             rightContainer.id = 'fans-right';
+            
+            // Add tribune backdrop
+            const backdrop = createTribuneBackdrop('right', rightTeam.colors[0], rightTeam.colors[1]);
+            rightContainer.appendChild(backdrop);
+            
             buildFans(rightContainer, rightTeam.colors[0], rightTeam.colors[1]);
             gameScreen.appendChild(rightContainer);
         }
 
         initialized = true;
+
+        // Start idle animations
+        startIdleAnimations();
+
         console.log('[FansRenderer] Fans initialized',
             leftTeam ? `Left: ${leftTeam.name}` : '',
             rightTeam ? `Right: ${rightTeam.name}` : '');
@@ -125,20 +197,47 @@ const FansRenderer = (() => {
      * @param {string} color2 - Secondary team color
      */
     function buildFans(container, color1, color2) {
-        const fansPerRow = Math.ceil(FANS_PER_SIDE / ROWS);
-
         for (let row = 0; row < ROWS; row++) {
             const rowDiv = document.createElement('div');
             rowDiv.className = `fan-row fan-row-${row}`;
 
-            for (let i = 0; i < fansPerRow; i++) {
-                const fanIndex = row * fansPerRow + i;
-                const fan = createFanElement(color1, color2, fanIndex);
+            for (let i = 0; i < FANS_PER_ROW; i++) {
+                const fanIndex = row * FANS_PER_ROW + i;
+                const fan = createFanElement(color1, color2, fanIndex, row);
                 rowDiv.appendChild(fan);
             }
 
             container.appendChild(rowDiv);
         }
+    }
+
+    /**
+     * Starts ambient idle animations - random fans sway gently
+     */
+    function startIdleAnimations() {
+        if (idleInterval) clearInterval(idleInterval);
+
+        idleInterval = setInterval(() => {
+            if (!initialized) return;
+
+            // Pick random fans to do a small animation
+            const containers = [leftContainer, rightContainer].filter(c => c !== null);
+            containers.forEach(container => {
+                const fans = container.querySelectorAll('.fan-person');
+                if (fans.length === 0) return;
+
+                // Random fan does a small sway/movement
+                const randomIdx = Math.floor(Math.random() * fans.length);
+                const fan = fans[randomIdx];
+                
+                if (!fan.classList.contains('idle-wave')) {
+                    fan.classList.add('idle-wave');
+                    setTimeout(() => {
+                        fan.classList.remove('idle-wave');
+                    }, 1500);
+                }
+            });
+        }, 800);
     }
 
     /**
@@ -157,12 +256,42 @@ const FansRenderer = (() => {
         container.classList.add('celebrating');
         console.log(`[FansRenderer] Player ${scoringPlayer} fans celebrating!`);
 
+        // Spawn confetti particles
+        spawnConfetti(container);
+
         // Remove after animation
         setTimeout(() => {
             if (container) {
                 container.classList.remove('celebrating');
             }
-        }, 4000);
+        }, 5000);
+    }
+
+    /**
+     * Spawns confetti particles inside a container
+     * @param {HTMLElement} container
+     */
+    function spawnConfetti(container) {
+        const colors = ['#ff0', '#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff', '#fff'];
+        const confettiCount = 20;
+
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'fan-confetti';
+            confetti.style.setProperty('--confetti-x', `${Math.random() * 100}%`);
+            confetti.style.setProperty('--confetti-delay', `${Math.random() * 0.5}s`);
+            confetti.style.setProperty('--confetti-speed', `${1 + Math.random() * 2}s`);
+            confetti.style.setProperty('--confetti-rotate', `${Math.random() * 720}deg`);
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            container.appendChild(confetti);
+
+            // Remove after animation
+            setTimeout(() => {
+                if (confetti.parentNode) {
+                    confetti.parentNode.removeChild(confetti);
+                }
+            }, 3500);
+        }
     }
 
     /**
@@ -177,6 +306,10 @@ const FansRenderer = (() => {
      * Removes all fan elements from DOM
      */
     function destroy() {
+        if (idleInterval) {
+            clearInterval(idleInterval);
+            idleInterval = null;
+        }
         if (leftContainer && leftContainer.parentNode) {
             leftContainer.parentNode.removeChild(leftContainer);
         }

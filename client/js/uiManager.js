@@ -1405,12 +1405,15 @@ const UIManager = (() => {
     }
 
     /**
-     * Enters nail selection mode - player clicks on a nail to destroy it
-     */
     function enterNailSelectMode() {
         const canvasContainer = document.getElementById('canvas-container');
         const canvas = document.getElementById('game-canvas');
         if (!canvasContainer || !canvas) return;
+
+        // Disable game input while selecting nail
+        if (typeof InputHandler !== 'undefined') {
+            InputHandler.setPhase('idle');
+        }
 
         // Add visual indicators
         canvasContainer.classList.add('nail-select-mode');
@@ -1447,19 +1450,27 @@ const UIManager = (() => {
             // Clean up UI
             canvasContainer.classList.remove('nail-select-mode');
             hint.style.display = 'none';
+
+            // Restore game input to direction phase
+            if (typeof InputHandler !== 'undefined') {
+                InputHandler.setPhase('direction');
+            }
         });
 
-        // Canvas click handler for selecting nail
-        const nailClickHandler = (e) => {
+        // Use pointerup instead of click (Pointer Events suppress click via preventDefault)
+        const nailPointerHandler = (e) => {
             if (!JokerManager.isNailSelectMode()) {
-                canvas.removeEventListener('click', nailClickHandler);
+                canvas.removeEventListener('pointerup', nailPointerHandler);
                 return;
             }
+
+            // Prevent regular input processing
+            e.stopImmediatePropagation();
 
             const field = Game.getCurrentField();
             if (!field) return;
 
-            // Convert click to field coordinates
+            // Convert pointer position to field coordinates
             const fieldPos = GameRenderer.canvasToField(e.clientX, e.clientY);
 
             // Find nearest nail
@@ -1481,11 +1492,11 @@ const UIManager = (() => {
             // Only select if close enough (within 3x nail radius)
             if (nearestIndex >= 0 && nearestDist < field.nailRadius * 3) {
                 JokerManager.selectNail(nearestIndex);
-                canvas.removeEventListener('click', nailClickHandler);
+                canvas.removeEventListener('pointerup', nailPointerHandler);
             }
         };
 
-        canvas.addEventListener('click', nailClickHandler);
+        canvas.addEventListener('pointerup', nailPointerHandler);
     }
 
     return {

@@ -461,18 +461,24 @@ const Game = (() => {
 
             const options = {
                 goalkeeperEnabled: settings.goalkeeperEnabled,
+                goalkeeperSize: settings.goalkeeperSize || 30,
                 shotStartTime: shotStartTime,
                 jokerOptions: jokerOptions
             };
 
-            // Inform renderer
-            GameRenderer.setGoalkeeperState(options.goalkeeperEnabled, shotStartTime);
+            // Inform renderer (including frozen state for visual sync)
+            const isGkFrozen = jokerOptions.freezeGoalkeeper === true;
+            GameRenderer.setGoalkeeperState(options.goalkeeperEnabled, shotStartTime, isGkFrozen);
 
             // Simulate locally
             const result = PhysicsClient.simulateShot(currentField, angle, power, ballPos, options);
 
             // Clear active joker after shot is executed
-            if (typeof JokerManager !== 'undefined') JokerManager.clearActiveJoker();
+            if (typeof JokerManager !== 'undefined') {
+                JokerManager.clearActiveJoker();
+                // Reset frozen state on renderer so goalkeeper moves again next turn
+                GameRenderer.setGoalkeeperState(options.goalkeeperEnabled, shotStartTime, false);
+            }
 
             // Start playback
             PhysicsClient.startPlayback(result, handleCollisionEvent, handleShotComplete);

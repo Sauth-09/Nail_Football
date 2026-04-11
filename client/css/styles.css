@@ -2260,7 +2260,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════ */
-/* Fan / Supporter Containers                       */
+/* Fan / Supporter Tribune Containers               */
 /* ═══════════════════════════════════════════════ */
 
 .fans-container {
@@ -2269,34 +2269,88 @@ body {
     transform: translateY(-50%);
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0;
     z-index: 5;
     pointer-events: none;
+    padding: 6px 3px 4px;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .fans-container-left {
-    left: 4px;
+    left: 0;
 }
 
 .fans-container-right {
-    right: 4px;
+    right: 0;
 }
 
+/* Tribune backdrop - stadium stand feel */
+.tribune-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 8px;
+    z-index: -1;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.tribune-left {
+    border-right: 2px solid rgba(255,255,255,0.1);
+    border-radius: 0 8px 8px 0;
+}
+
+.tribune-right {
+    border-left: 2px solid rgba(255,255,255,0.1);
+    border-radius: 8px 0 0 8px;
+}
+
+/* Fan rows with depth perspective */
 .fan-row {
     display: flex;
-    gap: 1px;
+    gap: 0px;
     align-items: flex-end;
+    justify-content: center;
+    padding: 0 2px;
+    position: relative;
 }
 
+/* Front row - largest */
+.fan-row-0 {
+    z-index: 4;
+}
+
+/* Second row - slightly smaller and shifted up */
 .fan-row-1 {
-    transform: scale(0.85);
-    opacity: 0.8;
+    transform: scale(0.88) translateY(2px);
+    opacity: 0.9;
+    z-index: 3;
 }
 
+/* Third row */
+.fan-row-2 {
+    transform: scale(0.76) translateY(3px);
+    opacity: 0.8;
+    z-index: 2;
+}
+
+/* Back row - smallest */
+.fan-row-3 {
+    transform: scale(0.65) translateY(4px);
+    opacity: 0.7;
+    z-index: 1;
+}
+
+/* Individual fan */
 .fan-person {
-    width: 20px;
-    height: 32px;
+    width: 18px;
+    height: 30px;
     transition: transform 0.3s ease;
+    animation: fanIdleSway var(--fan-sway-speed, 3s) ease-in-out infinite alternate;
+    animation-delay: var(--fan-anim-delay, 0s);
 }
 
 .fan-svg {
@@ -2304,64 +2358,159 @@ body {
     height: 100%;
 }
 
-/* Fan arm animations (idle sway) */
-.fan-arm-left, .fan-arm-right {
+/* Fan arm transform origins */
+.fan-arm-left {
     transform-origin: 6px 13px;
 }
 
-/* Goal celebration animation */
+.fan-arm-right {
+    transform-origin: 18px 13px;
+}
+
+/* Idle sway animation - subtle natural movement */
+@keyframes fanIdleSway {
+    0% { transform: translateX(0) rotate(0deg); }
+    25% { transform: translateX(-0.5px) rotate(-1deg); }
+    50% { transform: translateX(0.3px) rotate(0.5deg); }
+    75% { transform: translateX(-0.3px) rotate(-0.5deg); }
+    100% { transform: translateX(0.5px) rotate(1deg); }
+}
+
+/* Random idle wave - triggered by JS */
+.fan-person.idle-wave {
+    animation: fanIdleWave 1.5s ease-in-out !important;
+}
+
+@keyframes fanIdleWave {
+    0% { transform: translateY(0) scale(1); }
+    15% { transform: translateY(-3px) scale(1.03); }
+    30% { transform: translateY(-1px) scale(1.01); }
+    50% { transform: translateY(-4px) scale(1.05); }
+    70% { transform: translateY(-1px) scale(1.01); }
+    100% { transform: translateY(0) scale(1); }
+}
+
+.fan-person.idle-wave .fan-arm-left {
+    animation: armIdleWave 0.6s ease-in-out infinite alternate;
+}
+
+.fan-person.idle-wave .fan-arm-right {
+    animation: armIdleWaveR 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes armIdleWave {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(-25deg); }
+}
+
+@keyframes armIdleWaveR {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(25deg); }
+}
+
+/* ── Goal celebration animation ── */
 .fans-container.celebrating .fan-person {
-    animation: fanCelebrate 0.6s ease-in-out;
-    animation-fill-mode: forwards;
+    animation: fanCelebrate 0.5s ease-in-out infinite alternate;
+    animation-delay: calc(var(--fan-anim-delay, 0s) * 0.5);
 }
 
 .fans-container.celebrating .fan-arm-left {
-    animation: armWaveLeft 0.4s ease-in-out infinite alternate;
+    animation: armWaveLeft 0.3s ease-in-out infinite alternate;
 }
 
 .fans-container.celebrating .fan-arm-right {
-    animation: armWaveRight 0.4s ease-in-out infinite alternate;
+    animation: armWaveRight 0.3s ease-in-out infinite alternate;
 }
 
-.fans-container.celebrating .fan-person:nth-child(1) { animation-delay: 0s; }
-.fans-container.celebrating .fan-person:nth-child(2) { animation-delay: 0.05s; }
-.fans-container.celebrating .fan-person:nth-child(3) { animation-delay: 0.1s; }
-.fans-container.celebrating .fan-person:nth-child(4) { animation-delay: 0.15s; }
+/* Staggered celebration delays */
+.fans-container.celebrating .fan-row-0 .fan-person:nth-child(1) { animation-delay: 0s; }
+.fans-container.celebrating .fan-row-0 .fan-person:nth-child(2) { animation-delay: 0.05s; }
+.fans-container.celebrating .fan-row-0 .fan-person:nth-child(3) { animation-delay: 0.1s; }
+.fans-container.celebrating .fan-row-0 .fan-person:nth-child(4) { animation-delay: 0.15s; }
+.fans-container.celebrating .fan-row-0 .fan-person:nth-child(5) { animation-delay: 0.08s; }
+.fans-container.celebrating .fan-row-0 .fan-person:nth-child(6) { animation-delay: 0.12s; }
+
+.fans-container.celebrating .fan-row-1 .fan-person { animation-delay: 0.1s; }
+.fans-container.celebrating .fan-row-2 .fan-person { animation-delay: 0.15s; }
+.fans-container.celebrating .fan-row-3 .fan-person { animation-delay: 0.2s; }
 
 @keyframes fanCelebrate {
-    0% { transform: translateY(0) scale(1); }
-    30% { transform: translateY(-8px) scale(1.1); }
-    60% { transform: translateY(-5px) scale(1.05); }
-    100% { transform: translateY(-4px) scale(1.05); }
+    0% { transform: translateY(0) scale(1) rotate(0deg); }
+    30% { transform: translateY(-10px) scale(1.12) rotate(-3deg); }
+    60% { transform: translateY(-6px) scale(1.06) rotate(2deg); }
+    100% { transform: translateY(-8px) scale(1.08) rotate(-1deg); }
 }
 
 @keyframes armWaveLeft {
     0% { transform: rotate(0deg); }
-    100% { transform: rotate(-40deg); }
+    100% { transform: rotate(-50deg); }
 }
 
 @keyframes armWaveRight {
     0% { transform: rotate(0deg); }
-    100% { transform: rotate(40deg); }
+    100% { transform: rotate(50deg); }
 }
 
-/* Responsive fan sizing */
-@media (max-width: 600px) {
+/* Confetti particles */
+.fan-confetti {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 1px;
+    left: var(--confetti-x, 50%);
+    top: 0;
+    animation: confettiFall var(--confetti-speed, 2s) ease-out var(--confetti-delay, 0s) forwards;
+    z-index: 10;
+    pointer-events: none;
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+        opacity: 1;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(120px) rotate(var(--confetti-rotate, 360deg)) scale(0.3);
+        opacity: 0;
+    }
+}
+
+/* ── Responsive fan sizing ── */
+@media (max-width: 700px) {
     .fan-person {
-        width: 16px;
-        height: 26px;
+        width: 14px;
+        height: 24px;
+    }
+    .fans-container {
+        padding: 4px 2px 3px;
+    }
+}
+
+@media (max-width: 500px) {
+    .fan-person {
+        width: 12px;
+        height: 20px;
+    }
+    .fans-container-left {
+        left: 0;
+    }
+    .fans-container-right {
+        right: 0;
+    }
+    .fan-row-2, .fan-row-3 {
+        display: none;
     }
 }
 
 @media (max-width: 400px) {
     .fan-person {
-        width: 14px;
-        height: 22px;
+        width: 10px;
+        height: 18px;
     }
-    .fans-container-left {
-        left: 2px;
-    }
-    .fans-container-right {
-        right: 2px;
+    .fan-row-3 {
+        display: none;
     }
 }

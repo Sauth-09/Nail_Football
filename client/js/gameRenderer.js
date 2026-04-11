@@ -41,6 +41,7 @@ const GameRenderer = (() => {
 
     let goalkeeperEnabled = true;
     let goalkeeperShotStartTime = 0;
+    let goalkeeperFrozen = false;
 
     let canvasWidth = 0, canvasHeight = 0;
 
@@ -145,9 +146,10 @@ const GameRenderer = (() => {
     /**
      * Updates goalkeeper configuration for rendering
      */
-    function setGoalkeeperState(enabled, shotStartTime = 0) {
+    function setGoalkeeperState(enabled, shotStartTime = 0, frozen = false) {
         goalkeeperEnabled = enabled;
         goalkeeperShotStartTime = shotStartTime;
+        goalkeeperFrozen = frozen;
     }
 
     /**
@@ -205,9 +207,26 @@ const GameRenderer = (() => {
             const gkWidth = 12;
             const gkHeight = (typeof UIManager !== 'undefined' ? UIManager.getSettings().goalkeeperSize : 30) || 30;
 
-            const currentY = PhysicsClient.getGoalkeeperY(t, field, gkBaseY);
-            drawGoalkeeper(ctx, gkLeftX, currentY, gkWidth, gkHeight, '#E0E0E0'); // Metallic silver
-            drawGoalkeeper(ctx, gkRightX, currentY, gkWidth, gkHeight, '#E0E0E0');
+            const currentY = goalkeeperFrozen ? gkBaseY : PhysicsClient.getGoalkeeperY(t, field, gkBaseY);
+            const gkColor = goalkeeperFrozen ? '#80DEEA' : '#E0E0E0';
+            drawGoalkeeper(ctx, gkLeftX, currentY, gkWidth, gkHeight, gkColor);
+            drawGoalkeeper(ctx, gkRightX, currentY, gkWidth, gkHeight, gkColor);
+
+            // Draw freeze effect indicator when frozen
+            if (goalkeeperFrozen) {
+                ctx.save();
+                ctx.globalAlpha = 0.4 + Math.sin(t * 0.005) * 0.2;
+                ctx.strokeStyle = '#00BCD4';
+                ctx.lineWidth = 2;
+                const r = (gkHeight / 2 + 4) * Math.min(scaleX, scaleY);
+                ctx.beginPath();
+                ctx.arc(gkLeftX * scaleX, currentY * scaleY, r, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(gkRightX * scaleX, currentY * scaleY, r, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
         }
 
         // Layer 5a: Effects before ball (trail, glow)
