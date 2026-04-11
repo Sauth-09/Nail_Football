@@ -2357,8 +2357,8 @@ body {
     width: 20px;
     height: 34px;
     transition: transform 0.3s ease;
-    animation: fanIdleSway var(--fan-sway-speed, 3s) ease-in-out infinite alternate;
-    animation-delay: var(--fan-anim-delay, 0s);
+    will-change: transform; /* Hardware acceleration for goal animation */
+    backface-visibility: hidden; /* Prevent flickering */
 }
 
 .fan-svg {
@@ -2369,10 +2369,12 @@ body {
 /* Fan arm transform origins */
 .fan-arm-left {
     transform-origin: 6px 13px;
+    will-change: transform;
 }
 
 .fan-arm-right {
     transform-origin: 18px 13px;
+    will-change: transform;
 }
 
 /* Idle sway animation - subtle natural movement */

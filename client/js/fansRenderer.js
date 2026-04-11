@@ -215,29 +215,10 @@ const FansRenderer = (() => {
      * Starts ambient idle animations - random fans sway gently
      */
     function startIdleAnimations() {
+        // Disabled idle animations for performance.
+        // Fans will only animate when a goal is scored via onGoal()
         if (idleInterval) clearInterval(idleInterval);
-
-        idleInterval = setInterval(() => {
-            if (!initialized) return;
-
-            // Pick random fans to do a small animation
-            const containers = [leftContainer, rightContainer].filter(c => c !== null);
-            containers.forEach(container => {
-                const fans = container.querySelectorAll('.fan-person');
-                if (fans.length === 0) return;
-
-                // Random fan does a small sway/movement
-                const randomIdx = Math.floor(Math.random() * fans.length);
-                const fan = fans[randomIdx];
-                
-                if (!fan.classList.contains('idle-wave')) {
-                    fan.classList.add('idle-wave');
-                    setTimeout(() => {
-                        fan.classList.remove('idle-wave');
-                    }, 1500);
-                }
-            });
-        }, 800);
+        idleInterval = null;
     }
 
     /**
