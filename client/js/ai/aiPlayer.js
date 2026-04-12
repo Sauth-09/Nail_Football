@@ -48,6 +48,11 @@ class AIPlayer {
         // 1. Düşünme Animasyonu
         await this.animator.simulateThinking();
 
+        // Calculate expected execution time precisely so the AI simulated goalkeeper perfectly matches reality.
+        const postThinkAlloc = { easy: 6500, medium: 3500, hard: 2500 }[this.difficulty];
+        this.exactShotTime = Date.now() + postThinkAlloc;
+        gameState.options.shotStartTime = this.exactShotTime;
+
         // 2. Simülasyon
         const shots = await this.strategy.evaluateAllShots(
             this.simulator,
@@ -73,6 +78,13 @@ class AIPlayer {
             UIManager.updateTurnIndicator(this.side === 'left' ? 1 : 2, 'power');
         }
         await this.animator.animatePower(finalShot.power);
+
+        const timeToWait = this.exactShotTime - Date.now();
+        if (timeToWait > 0) {
+            await this.wait(timeToWait);
+        } else if (timeToWait < -50) {
+            console.warn("[AI] Animation duration exceeded expectation by", -timeToWait, "ms");
+        }
 
         this.isThinking = false;
         this.currentState = 'done';

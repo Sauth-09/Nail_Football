@@ -248,7 +248,7 @@ const PhysicsClient = (() => {
             // Goalkeeper collisions
             if (isGkEnabled) {
                 const currentTimeMs = shotStartTime + (frame * DT * 1000);
-                const currentY = isGkFrozen ? gkBaseY : getGoalkeeperY(currentTimeMs, field, gkBaseY);
+                const currentY = isGkFrozen ? (joker.frozenY !== undefined ? joker.frozenY : gkBaseY) : getGoalkeeperY(currentTimeMs, field, gkBaseY);
 
                 const gkLeft = { x: gkLeftX, y: currentY, width: gkWidth, height: gkHeight };
                 const gkRight = { x: gkRightX, y: currentY, width: gkWidth, height: gkHeight };

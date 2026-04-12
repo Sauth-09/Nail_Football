@@ -226,9 +226,7 @@ serverInstance.on('error', (err) => {
     if (err.code === 'EADDRINUSE' || err.code === 'EACCES') {
         logger.log('info', `Manager Port ${currentManagerPort} kullanımda, ${currentManagerPort + 1} deneniyor...`);
         currentManagerPort++;
-        setTimeout(() => {
-            serverInstance.listen(currentManagerPort, '127.0.0.1');
-        }, 50);
+        serverInstance.listen(currentManagerPort, '127.0.0.1');
     } else {
         logger.log('error', `Manager sunucusu başlatılamadı: ${err.message}`);
     }

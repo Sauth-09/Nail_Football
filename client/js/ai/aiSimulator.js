@@ -19,7 +19,7 @@ class AISimulator {
      * Calculates the deterministic Y position of the goalkeeper based on time
      */
     getGoalkeeperY(t, startY) {
-        return startY + Math.sin(t * 0.003) * 50;
+        return startY + Math.sin(t * 0.003) * 120;
     }
 
     /**

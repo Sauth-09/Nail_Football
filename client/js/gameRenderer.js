@@ -42,6 +42,7 @@ const GameRenderer = (() => {
     let goalkeeperEnabled = true;
     let goalkeeperShotStartTime = 0;
     let goalkeeperFrozen = false;
+    let goalkeeperFrozenY = 0;
 
     let canvasWidth = 0, canvasHeight = 0;
 
@@ -146,10 +147,11 @@ const GameRenderer = (() => {
     /**
      * Updates goalkeeper configuration for rendering
      */
-    function setGoalkeeperState(enabled, shotStartTime = 0, frozen = false) {
+    function setGoalkeeperState(enabled, shotStartTime = 0, frozen = false, frozenY = null) {
         goalkeeperEnabled = enabled;
         goalkeeperShotStartTime = shotStartTime;
         goalkeeperFrozen = frozen;
+        goalkeeperFrozenY = frozenY;
     }
 
     /**
@@ -207,7 +209,7 @@ const GameRenderer = (() => {
             const gkWidth = 12;
             const gkHeight = (typeof UIManager !== 'undefined' ? UIManager.getSettings().goalkeeperSize : 30) || 30;
 
-            const currentY = goalkeeperFrozen ? gkBaseY : PhysicsClient.getGoalkeeperY(t, field, gkBaseY);
+            const currentY = goalkeeperFrozen ? (goalkeeperFrozenY !== null ? goalkeeperFrozenY : gkBaseY) : PhysicsClient.getGoalkeeperY(t, field, gkBaseY);
             const gkColor = goalkeeperFrozen ? '#80DEEA' : '#E0E0E0';
             drawGoalkeeper(ctx, gkLeftX, currentY, gkWidth, gkHeight, gkColor);
             drawGoalkeeper(ctx, gkRightX, currentY, gkWidth, gkHeight, gkColor);

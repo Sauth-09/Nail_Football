@@ -25,9 +25,9 @@ class AIStrategy {
 
         // Hata oranları (Daha sonra Humanization fazında da kullanılabilir - azaltılmış hata)
         this.errorConfig = {
-            easy: { angleError: 15, powerError: 0.15 },
-            medium: { angleError: 5, powerError: 0.08 },
-            hard: { angleError: 1, powerError: 0.02 }
+            easy: { angleError: 10, powerError: 0.10 },
+            medium: { angleError: 3, powerError: 0.05 },
+            hard: { angleError: 0, powerError: 0.00 }
         };
     }
 

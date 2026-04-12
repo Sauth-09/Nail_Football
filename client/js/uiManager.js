@@ -455,7 +455,19 @@ const UIManager = (() => {
                     enterNailSelectMode();
                 } else {
                     // Activate joker (flamingBall or freezeGoalkeeper)
-                    const success = JokerManager.activateJoker(currentPlayer, jokerType);
+                    let extraData = {};
+                    if (jokerType === 'freezeGoalkeeper' && typeof PhysicsClient !== 'undefined') {
+                        const field = Game.getCurrentField();
+                        const t = Date.now();
+                        const gkBaseY = field.fieldHeight / 2;
+                        const frozenY = PhysicsClient.getGoalkeeperY(t, field, gkBaseY);
+                        extraData.frozenY = frozenY;
+                        
+                        if (typeof GameRenderer !== 'undefined') {
+                            GameRenderer.setGoalkeeperState(settings.goalkeeperEnabled, 0, true, frozenY);
+                        }
+                    }
+                    const success = JokerManager.activateJoker(currentPlayer, jokerType, extraData);
                     if (!success) return;
 
                     // Show notification

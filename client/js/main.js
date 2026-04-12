@@ -468,17 +468,10 @@ const Game = (() => {
 
             // Inform renderer (including frozen state for visual sync)
             const isGkFrozen = jokerOptions.freezeGoalkeeper === true;
-            GameRenderer.setGoalkeeperState(options.goalkeeperEnabled, shotStartTime, isGkFrozen);
+            GameRenderer.setGoalkeeperState(options.goalkeeperEnabled, shotStartTime, isGkFrozen, jokerOptions.frozenY);
 
             // Simulate locally
             const result = PhysicsClient.simulateShot(currentField, angle, power, ballPos, options);
-
-            // Clear active joker after shot is executed
-            if (typeof JokerManager !== 'undefined') {
-                JokerManager.clearActiveJoker();
-                // Reset frozen state on renderer so goalkeeper moves again next turn
-                GameRenderer.setGoalkeeperState(options.goalkeeperEnabled, shotStartTime, false);
-            }
 
             // Start playback
             PhysicsClient.startPlayback(result, handleCollisionEvent, handleShotComplete);
@@ -629,6 +622,12 @@ const Game = (() => {
         gameState = 'direction';
         shotAngle = null;
 
+        if (typeof JokerManager !== 'undefined') {
+            JokerManager.clearActiveJoker();
+            const settings = typeof UIManager !== 'undefined' ? UIManager.getSettings() : { goalkeeperEnabled: true };
+            GameRenderer.setGoalkeeperState(settings.goalkeeperEnabled, 0, false);
+        }
+
         GameRenderer.setCurrentPlayer(currentPlayer);
         InputHandler.setPhase('direction');
         InputHandler.setBallPosition(ballPos.x, ballPos.y);
@@ -699,6 +698,12 @@ const Game = (() => {
         InputHandler.setPhase('idle');
         AnimationManager.setBallPulse(false);
 
+        if (typeof JokerManager !== 'undefined') {
+            JokerManager.clearActiveJoker();
+            const settings = typeof UIManager !== 'undefined' ? UIManager.getSettings() : { goalkeeperEnabled: true };
+            GameRenderer.setGoalkeeperState(settings.goalkeeperEnabled, 0, false);
+        }
+
         SoundManager.playEnd();
 
         let winner = 0;
@@ -761,7 +766,11 @@ const Game = (() => {
             shotAngle = null;
 
             // Reset jokers
-            if (typeof JokerManager !== 'undefined') JokerManager.resetJokers();
+            if (typeof JokerManager !== 'undefined') {
+                JokerManager.resetJokers();
+                const settings = typeof UIManager !== 'undefined' ? UIManager.getSettings() : { goalkeeperEnabled: true };
+                GameRenderer.setGoalkeeperState(settings.goalkeeperEnabled, 0, false);
+            }
 
             // Reset fans
             if (typeof FansRenderer !== 'undefined') FansRenderer.reset();

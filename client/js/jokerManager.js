@@ -84,9 +84,10 @@ const JokerManager = (() => {
      * Activates a joker for a player
      * @param {number} player - 1 or 2
      * @param {string} type - Joker type key
+     * @param {Object} [extraData] - Optional extra metadata for the joker
      * @returns {boolean} Whether activation was successful
      */
-    function activateJoker(player, type) {
+    function activateJoker(player, type, extraData = null) {
         if (jokersUsed[player]) {
             console.warn(`[JokerManager] Player ${player} already used their joker`);
             return false;
@@ -96,7 +97,7 @@ const JokerManager = (() => {
             return false;
         }
 
-        activeJoker = { player, type };
+        activeJoker = { player, type, ...(extraData || {}) };
         jokersUsed[player] = true;
 
         console.log(`[JokerManager] Player ${player} activated: ${JOKER_TYPES[type].name}`);
@@ -127,6 +128,7 @@ const JokerManager = (() => {
                 break;
             case 'freezeGoalkeeper':
                 options.freezeGoalkeeper = true;
+                options.frozenY = activeJoker.frozenY;
                 break;
         }
         return options;
