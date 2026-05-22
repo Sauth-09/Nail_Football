@@ -407,7 +407,9 @@ class GameManager {
                 type: 'SHOT_EXECUTED',
                 angle,
                 power,
-                trajectory: result.trajectory
+                shotStartTime: options.shotStartTime,
+                trajectory: result.trajectory,
+                collisionEvents: result.collisionEvents
             });
 
             this.broadcastToRoom(room, {
@@ -434,7 +436,9 @@ class GameManager {
                 type: 'SHOT_EXECUTED',
                 angle,
                 power,
-                trajectory: result.trajectory
+                shotStartTime: options.shotStartTime,
+                trajectory: result.trajectory,
+                collisionEvents: result.collisionEvents
             });
 
             this.broadcastToRoom(room, {

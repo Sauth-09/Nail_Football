@@ -102,8 +102,9 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
     const goalTop = (fieldHeight - goalWidth) / 2;
     const goalBottom = (fieldHeight + goalWidth) / 2;
 
-    // Trajectory recording
+    // Trajectory and Events
     const trajectory = [];
+    const collisionEvents = [];
     let goalScored = null; // null or { player: 1|2 }
     let frame = 0;
 
@@ -133,11 +134,13 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
         if (ball.y - ball.radius < 0) {
             ball.y = ball.radius;
             ball.vy = -ball.vy * wallRestitution;
+            collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
         }
         // Bottom wall
         if (ball.y + ball.radius > fieldHeight) {
             ball.y = fieldHeight - ball.radius;
             ball.vy = -ball.vy * wallRestitution;
+            collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
         }
 
         // Left wall (excluding goal area)
@@ -146,6 +149,7 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
                 // Wall bounce
                 ball.x = ball.radius;
                 ball.vx = -ball.vx * wallRestitution;
+                collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
             }
         }
 
@@ -155,6 +159,7 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
                 // Wall bounce
                 ball.x = fieldWidth - ball.radius;
                 ball.vx = -ball.vx * wallRestitution;
+                collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
             }
         }
 
@@ -168,6 +173,7 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
                     ball.y = goalTop - ball.radius;
                     ball.vy = -ball.vy * wallRestitution;
                     console.log(`[PHYSICS] Left goal TOP post collision at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
+                    collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
                 }
             }
             // Bottom post of left goal
@@ -177,6 +183,7 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
                     ball.y = goalBottom + ball.radius;
                     ball.vy = -ball.vy * wallRestitution;
                     console.log(`[PHYSICS] Left goal BOTTOM post collision at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
+                    collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
                 }
             }
         }
@@ -189,6 +196,7 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
                     ball.y = goalTop - ball.radius;
                     ball.vy = -ball.vy * wallRestitution;
                     console.log(`[PHYSICS] Right goal TOP post collision at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
+                    collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
                 }
             }
             // Bottom post of right goal
@@ -197,6 +205,7 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
                     ball.y = goalBottom + ball.radius;
                     ball.vy = -ball.vy * wallRestitution;
                     console.log(`[PHYSICS] Right goal BOTTOM post collision at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
+                    collisionEvents.push({ type: 'wall', x: ball.x, y: ball.y, frame, speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) });
                 }
             }
         }
@@ -246,6 +255,12 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
                 const overlap = minDist - distance;
                 ball.x += nx * overlap;
                 ball.y += ny * overlap;
+
+                collisionEvents.push({
+                    type: 'nail', index: nails.indexOf(nail),
+                    x: nail.x, y: nail.y, frame,
+                    speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+                });
             }
         }
 
@@ -288,6 +303,12 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
                     }
 
                     console.log(`[PHYSICS] Goalkeeper collision! Ball at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)}), gk at (${gk.x.toFixed(1)}, ${gk.y.toFixed(1)})`);
+
+                    collisionEvents.push({
+                        type: 'goalkeeper',
+                        x: gk.x, y: gk.y, frame,
+                        speed: Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+                    });
                 }
             }
         }
@@ -317,6 +338,7 @@ function simulateShot(fieldConfig, angle, power, startPos = null, options = {}) 
 
     return {
         trajectory,
+        collisionEvents,
         finalPosition: { x: ball.x, y: ball.y },
         goalScored,
         totalFrames: frame,

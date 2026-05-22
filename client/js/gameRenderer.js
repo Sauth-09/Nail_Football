@@ -201,6 +201,15 @@ const GameRenderer = (() => {
         // Layer 4.5: Goalkeepers
         if (goalkeeperEnabled && typeof PhysicsClient !== 'undefined' && PhysicsClient.getGoalkeeperY) {
             let t = Date.now();
+            
+            // SENKRONİZASYON DÜZELTMESİ:
+            // Top hareket halindeyse (animasyon), görsel zamanı fizik zamanıyla senkronize et
+            if (typeof PhysicsClient.isPlaying === 'function' && PhysicsClient.isPlaying()) {
+                if (typeof PhysicsClient.getCurrentFrame === 'function') {
+                    // Sabit zaman adımı 1/60 (ms cinsinden 1000/60)
+                    t = goalkeeperShotStartTime + (PhysicsClient.getCurrentFrame() * (1000 / 60));
+                }
+            }
 
             const gkBaseY = field.fieldHeight / 2;
             // Goalkeeper positioned close to goal line (synced with physics engine)

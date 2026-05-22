@@ -204,6 +204,9 @@ const UIManager = (() => {
                                 Game.stop();
                             }
                         }
+                        if (typeof SoundManager !== 'undefined') {
+                            SoundManager.stopActiveAnthem();
+                        }
                     });
                 } else if (screenId === 'btn-back-field') {
                     // Eğer AI modundaysak, geri dönünce zorluk seçimine gitsin, yoksa ana menüye

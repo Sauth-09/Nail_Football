@@ -558,7 +558,8 @@ const Game = (() => {
             AnimationManager.triggerScoreBounce(scorer);
 
             // Sound and animation
-            SoundManager.playGoal();
+            const scorerTeamId = (typeof TeamManager !== 'undefined') ? TeamManager.getTeamId(scorer) : null;
+            SoundManager.playGoal(scorerTeamId);
             const goalX = goalScored.side === 'right' ? currentField.fieldWidth - 15 : 15;
             const goalY = currentField.fieldHeight / 2;
             AnimationManager.triggerGoalAnimation(scorer, goalX, goalY);
@@ -775,6 +776,9 @@ const Game = (() => {
             // Reset fans
             if (typeof FansRenderer !== 'undefined') FansRenderer.reset();
 
+            // Stop any playing anthems on restart
+            if (typeof SoundManager !== 'undefined') SoundManager.stopActiveAnthem();
+
             const settings = UIManager.getSettings();
             matchTimer = settings.matchTime || 0;
             lastTimerTick = Date.now();
@@ -812,6 +816,9 @@ const Game = (() => {
 
         // Clean up fans
         if (typeof FansRenderer !== 'undefined') FansRenderer.destroy();
+
+        // Stop any active anthem on stop
+        if (typeof SoundManager !== 'undefined') SoundManager.stopActiveAnthem();
 
         // Reset team selection
         if (typeof TeamManager !== 'undefined') TeamManager.resetSelection();
@@ -855,7 +862,8 @@ const Game = (() => {
     function processGoalScored(data) {
         scores = data.scores;
         UIManager.updateScore(scores[0], scores[1]);
-        SoundManager.playGoal();
+        const scorerTeamId = (typeof TeamManager !== 'undefined') ? TeamManager.getTeamId(data.scoringPlayer) : null;
+        SoundManager.playGoal(scorerTeamId);
         if (typeof AnimationManager.triggerScoreBounce === 'function') {
             AnimationManager.triggerScoreBounce(data.scoringPlayer);
         }
@@ -982,6 +990,15 @@ const Game = (() => {
                     UIManager.showPowerBar(false);
                     UIManager.updateTurnIndicator(currentPlayer, 'animating');
                     AnimationManager.setBallPulse(false);
+
+                    // UPDATE GOALKEEPER STATE
+                    const settings = typeof UIManager !== 'undefined' ? UIManager.getSettings() : { goalkeeperEnabled: true };
+                    GameRenderer.setGoalkeeperState(
+                        settings.goalkeeperEnabled, 
+                        data.shotStartTime || Date.now(), 
+                        false, // isGkFrozen (not synced yet for MP jokers, but false is fine)
+                        null
+                    );
 
                     PhysicsClient.startPlayback(
                         { trajectory: data.trajectory, collisionEvents: data.collisionEvents || [], goalScored: null },

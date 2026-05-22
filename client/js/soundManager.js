@@ -33,6 +33,12 @@ const SoundManager = (() => {
     /** @type {boolean} Commentator/cheer sounds enabled */
     let commentatorEnabled = true;
 
+    /** @type {AudioBufferSourceNode|null} Currently playing anthem source node */
+    let activeAnthemSource = null;
+
+    /** @type {GainNode|null} Currently playing anthem gain node */
+    let activeAnthemGain = null;
+
     /**
      * Initializes the audio context (must be called after user interaction)
      */
@@ -142,7 +148,7 @@ const SoundManager = (() => {
     /**
      * Plays the goal sound (3-note melody + boom)
      */
-    function playGoal() {
+    function playGoal(scorerTeamId) {
         if (!audioContext || !sfxEnabled) return;
         resume();
 
@@ -157,10 +163,95 @@ const SoundManager = (() => {
             }, i * 150);
         });
 
+        // Play team anthem if provided
+        if (scorerTeamId) {
+            playTeamAnthem(scorerTeamId);
+        }
+
         // Commentator and crowd sounds
         if (commentatorEnabled) {
             setTimeout(() => playCommentatorGoal(), 300);
             setTimeout(() => playGoalCheer(), 600);
+        }
+    }
+
+    /**
+     * Stops the currently playing team anthem if there is one
+     */
+    function stopActiveAnthem() {
+        if (activeAnthemSource) {
+            try {
+                activeAnthemSource.stop();
+            } catch (e) {
+                // Already stopped or not started
+            }
+            activeAnthemSource = null;
+        }
+        if (activeAnthemGain) {
+            activeAnthemGain = null;
+        }
+    }
+
+    /**
+     * Plays a team specific anthem for 12 seconds with a 2-second fade-out
+     * @param {string} teamId - The ID of the scoring team
+     */
+    async function playTeamAnthem(teamId) {
+        if (!audioContext || !sfxEnabled || !teamId) return;
+        resume();
+
+        // Stop any currently playing anthem to prevent overlapping
+        stopActiveAnthem();
+
+        try {
+            const response = await fetch(`/assets/sounds/anthems/${teamId}.mp3`);
+            if (!response.ok) {
+                console.warn(`[SoundManager] Anthem file not found for team: ${teamId}`);
+                return;
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            
+            // Re-check if another anthem started while decoding
+            if (activeAnthemSource) {
+                stopActiveAnthem();
+            }
+
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+
+            const gainNode = audioContext.createGain();
+            // Start at comfortable volume, connected to masterGain
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+
+            // Configure 12-second total duration with a 2-second fade-out at the end
+            const anthemDuration = 12;
+            const fadeOutDuration = 2;
+
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime + anthemDuration - fadeOutDuration);
+            gainNode.gain.linearRampToValueAtTime(0.001, audioContext.currentTime + anthemDuration);
+
+            source.connect(gainNode);
+            gainNode.connect(masterGain);
+
+            activeAnthemSource = source;
+            activeAnthemGain = gainNode;
+
+            source.start(audioContext.currentTime);
+            source.stop(audioContext.currentTime + anthemDuration);
+
+            // Clean up reference when playback finishes naturally
+            source.onended = () => {
+                if (activeAnthemSource === source) {
+                    activeAnthemSource = null;
+                    activeAnthemGain = null;
+                }
+            };
+
+            console.log(`[SoundManager] Playing team anthem for: ${teamId}`);
+        } catch (error) {
+            console.error(`[SoundManager] Error playing anthem for team ${teamId}:`, error);
         }
     }
 
@@ -314,6 +405,8 @@ const SoundManager = (() => {
         playClick,
         playTurnChange,
         playStart,
-        playEnd
+        playEnd,
+        stopActiveAnthem,
+        playTeamAnthem
     };
 })();

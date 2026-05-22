@@ -398,12 +398,21 @@ const PhysicsClient = (() => {
         playback.active = false;
     }
 
+    /**
+     * Gets the current playback frame
+     * @returns {number}
+     */
+    function getCurrentFrame() {
+        return playback.currentFrame;
+    }
+
     return {
         simulateShot,
         startPlayback,
         advancePlayback,
         isPlaying,
         stopPlayback,
+        getCurrentFrame,
         getGoalkeeperY,
         removeNail
     };
