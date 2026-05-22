@@ -1,1 +1,26 @@
-{\n    \"name\": \"Çivi Futbolu - Nail Football\",\n    \"short_name\": \"Çivi Futbol\",\n    \"description\": \"Çivilerle dolu sahada gol at! 2 kişilik yerel, online ve yapay zekaya karşı oyna.\",\n    \"start_url\": \"/\",\n    \"display\": \"standalone\",\n    \"orientation\": \"landscape\",\n    \"theme_color\": \"#1a1a2e\",\n    \"background_color\": \"#1a1a2e\",\n    \"lang\": \"tr\",\n    \"categories\": [\"games\", \"sports\"],\n    \"icons\": [\n        {\n            \"src\": \"/icons/icon-192.png\",\n            \"sizes\": \"192x192\",\n            \"type\": \"image/png\",\n            \"purpose\": \"any maskable\"\n        },\n        {\n            \"src\": \"/icons/icon-512.png\",\n            \"sizes\": \"512x512\",\n            \"type\": \"image/png\",\n            \"purpose\": \"any maskable\"\n        }\n    ]\n}
+{
+    "name": "Çivi Futbolu - Nail Football",
+    "short_name": "Çivi Futbol",
+    "description": "Çivilerle dolu sahada gol at! 2 kişilik yerel, online ve yapay zekaya karşı oyna.",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "landscape",
+    "theme_color": "#1a1a2e",
+    "background_color": "#1a1a2e",
+    "lang": "tr",
+    "categories": ["games", "sports"],
+    "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

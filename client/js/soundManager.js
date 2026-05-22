@@ -193,7 +193,22 @@ const SoundManager = (() => {
     }
 
     /**
-     * Plays a team specific anthem for 12 seconds with a 2-second fade-out
+     * Helper to check and load a specific audio file URL
+     * Returns the AudioBuffer or null if not found
+     */
+    async function fetchAndDecodeAudio(url) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) return null;
+            const arrayBuffer = await response.arrayBuffer();
+            return await audioContext.decodeAudioData(arrayBuffer);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Plays a team specific anthem with dynamic duration, fallback paths, and randomized selection
      * @param {string} teamId - The ID of the scoring team
      */
     async function playTeamAnthem(teamId) {
@@ -203,21 +218,43 @@ const SoundManager = (() => {
         // Stop any currently playing anthem to prevent overlapping
         stopActiveAnthem();
 
+        // 1. Try randomized anthems (1, 2, 3) and fallback to classic [teamId].mp3
+        const nums = [1, 2, 3];
+        // Shuffle nums to randomize the order we try them in
+        const randomOrder = nums.sort(() => Math.random() - 0.5);
+        
+        let audioBuffer = null;
+        let loadedUrl = '';
+
+        for (const num of randomOrder) {
+            const url = `/assets/sounds/anthems/${teamId}${num}.mp3`;
+            audioBuffer = await fetchAndDecodeAudio(url);
+            if (audioBuffer) {
+                loadedUrl = url;
+                break;
+            }
+        }
+
+        // If no numbered files are found, fallback to the classic unnumbered anthem file
+        if (!audioBuffer) {
+            const fallbackUrl = `/assets/sounds/anthems/${teamId}.mp3`;
+            audioBuffer = await fetchAndDecodeAudio(fallbackUrl);
+            if (audioBuffer) {
+                loadedUrl = fallbackUrl;
+            }
+        }
+
+        if (!audioBuffer) {
+            console.warn(`[SoundManager] No anthem files found for team: ${teamId}`);
+            return;
+        }
+
+        // Re-check if another anthem started while decoding
+        if (activeAnthemSource) {
+            stopActiveAnthem();
+        }
+
         try {
-            const response = await fetch(`/assets/sounds/anthems/${teamId}.mp3`);
-            if (!response.ok) {
-                console.warn(`[SoundManager] Anthem file not found for team: ${teamId}`);
-                return;
-            }
-
-            const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-            
-            // Re-check if another anthem started while decoding
-            if (activeAnthemSource) {
-                stopActiveAnthem();
-            }
-
             const source = audioContext.createBufferSource();
             source.buffer = audioBuffer;
 
@@ -225,12 +262,16 @@ const SoundManager = (() => {
             // Start at comfortable volume, connected to masterGain
             gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
 
-            // Configure 12-second total duration with a 2-second fade-out at the end
-            const anthemDuration = 12;
-            const fadeOutDuration = 2;
+            // Fetch dynamic anthem duration from global settings, default to 15s
+            const settings = (typeof UIManager !== 'undefined') ? UIManager.getSettings() : { anthemDuration: 15 };
+            const configuredDuration = settings.anthemDuration || 15;
 
-            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime + anthemDuration - fadeOutDuration);
-            gainNode.gain.linearRampToValueAtTime(0.001, audioContext.currentTime + anthemDuration);
+            // Ensure we do not play beyond the audio buffer's real duration to avoid silence or errors
+            const playDuration = Math.min(configuredDuration, audioBuffer.duration);
+            const fadeOutDuration = Math.min(2, playDuration * 0.2);
+
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime + playDuration - fadeOutDuration);
+            gainNode.gain.linearRampToValueAtTime(0.001, audioContext.currentTime + playDuration);
 
             source.connect(gainNode);
             gainNode.connect(masterGain);
@@ -239,7 +280,7 @@ const SoundManager = (() => {
             activeAnthemGain = gainNode;
 
             source.start(audioContext.currentTime);
-            source.stop(audioContext.currentTime + anthemDuration);
+            source.stop(audioContext.currentTime + playDuration);
 
             // Clean up reference when playback finishes naturally
             source.onended = () => {
@@ -249,7 +290,7 @@ const SoundManager = (() => {
                 }
             };
 
-            console.log(`[SoundManager] Playing team anthem for: ${teamId}`);
+            console.log(`[SoundManager] Playing team anthem (${playDuration.toFixed(1)}s): ${loadedUrl}`);
         } catch (error) {
             console.error(`[SoundManager] Error playing anthem for team ${teamId}:`, error);
         }

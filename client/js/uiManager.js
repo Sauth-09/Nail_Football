@@ -28,7 +28,8 @@ const UIManager = (() => {
         ballTheme: 'classic',
         nailTheme: 'metal',
         fireworks: true,
-        commentator: true
+        commentator: true,
+        anthemDuration: 15
     };
 
     /** @type {Array} Available fields */
@@ -651,6 +652,16 @@ const UIManager = (() => {
             SoundManager.setCommentatorEnabled(settings.commentator);
             saveSettings();
         });
+
+        const settingAnthemDuration = document.getElementById('setting-anthem-duration');
+        if (settingAnthemDuration) {
+            settingAnthemDuration.addEventListener('input', () => {
+                settings.anthemDuration = parseInt(settingAnthemDuration.value);
+                const label = document.getElementById('anthem-duration-label');
+                if (label) label.textContent = `${settings.anthemDuration}sn`;
+                saveSettings();
+            });
+        }
     }
 
     /**
@@ -1238,13 +1249,17 @@ const UIManager = (() => {
             'setting-particles': settings.particles ? '1' : '0',
             'setting-volume': settings.volume,
             'setting-sfx': settings.sfx ? '1' : '0',
-            'setting-vibration': settings.vibration ? '1' : '0'
+            'setting-vibration': settings.vibration ? '1' : '0',
+            'setting-anthem-duration': settings.anthemDuration || 15
         };
 
         for (const [id, value] of Object.entries(els)) {
             const el = document.getElementById(id);
             if (el && value !== undefined) el.value = value;
         }
+
+        const anthemLabel = document.getElementById('anthem-duration-label');
+        if (anthemLabel) anthemLabel.textContent = `${settings.anthemDuration || 15}sn`;
 
         // Sync field select dropdowns as well
         const fieldBallTheme = document.getElementById('field-ball-theme');
