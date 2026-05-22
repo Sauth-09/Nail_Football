@@ -181,6 +181,14 @@ const Game = (() => {
         gameActive = true;
         shotAngle = null;
 
+        // Sync team manager with UI dropdowns to ensure previous selections are preserved
+        if (typeof TeamManager !== 'undefined') {
+            const selectP1 = document.getElementById('team-select-p1');
+            const selectP2 = document.getElementById('team-select-p2');
+            if (selectP1) TeamManager.selectTeam(1, selectP1.value || null);
+            if (selectP2) TeamManager.selectTeam(2, selectP2.value || null);
+        }
+
         // Reset jokers for new game
         if (typeof JokerManager !== 'undefined') JokerManager.resetJokers();
 
@@ -188,6 +196,32 @@ const Game = (() => {
         if (gameMode === 'vs_ai') {
             aiPlayer = new AIPlayer(aiDifficulty, 'right');
             aiPlayer.init(currentField);
+
+            // Auto-assign teams if not selected to ensure anthems play and fans render nicely
+            if (typeof TeamManager !== 'undefined') {
+                // If Player 1 (user) hasn't selected a team, assign a default one
+                if (!TeamManager.getTeamId(1)) {
+                    TeamManager.selectTeam(1, 'galatasaray');
+                    const selectP1 = document.getElementById('team-select-p1');
+                    if (selectP1) selectP1.value = 'galatasaray';
+                }
+
+                // If Player 2 (AI) hasn't selected a team, assign based on difficulty
+                if (!TeamManager.getTeamId(2)) {
+                    let aiTeam = 'fenerbahce';
+                    if (aiDifficulty === 'medium') aiTeam = 'besiktas';
+                    else if (aiDifficulty === 'hard') aiTeam = 'trabzonspor';
+
+                    // Ensure AI team doesn't conflict with Player 1's team
+                    if (TeamManager.getTeamId(1) === aiTeam) {
+                        aiTeam = aiTeam === 'fenerbahce' ? 'besiktas' : 'fenerbahce';
+                    }
+
+                    TeamManager.selectTeam(2, aiTeam);
+                    const selectP2 = document.getElementById('team-select-p2');
+                    if (selectP2) selectP2.value = aiTeam;
+                }
+            }
         } else {
             aiPlayer = null;
         }
