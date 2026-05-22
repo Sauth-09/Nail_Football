@@ -218,7 +218,10 @@ const SoundManager = (() => {
         // Stop any currently playing anthem to prevent overlapping
         stopActiveAnthem();
 
-        // 1. Try randomized anthems (1, 2, 3) and fallback to classic [teamId].mp3
+        // Normalize teamId to lowercase to prevent case-sensitivity issues on Linux production servers
+        const cleanTeamId = teamId.toLowerCase();
+
+        // 1. Try randomized anthems (1, 2, 3) and fallback to classic [cleanTeamId].mp3
         const nums = [1, 2, 3];
         // Shuffle nums to randomize the order we try them in
         const randomOrder = nums.sort(() => Math.random() - 0.5);
@@ -227,7 +230,7 @@ const SoundManager = (() => {
         let loadedUrl = '';
 
         for (const num of randomOrder) {
-            const url = `/assets/sounds/anthems/${teamId}${num}.mp3`;
+            const url = `/assets/sounds/anthems/${cleanTeamId}${num}.mp3`;
             audioBuffer = await fetchAndDecodeAudio(url);
             if (audioBuffer) {
                 loadedUrl = url;
@@ -237,7 +240,7 @@ const SoundManager = (() => {
 
         // If no numbered files are found, fallback to the classic unnumbered anthem file
         if (!audioBuffer) {
-            const fallbackUrl = `/assets/sounds/anthems/${teamId}.mp3`;
+            const fallbackUrl = `/assets/sounds/anthems/${cleanTeamId}.mp3`;
             audioBuffer = await fetchAndDecodeAudio(fallbackUrl);
             if (audioBuffer) {
                 loadedUrl = fallbackUrl;
@@ -245,7 +248,7 @@ const SoundManager = (() => {
         }
 
         if (!audioBuffer) {
-            console.warn(`[SoundManager] No anthem files found for team: ${teamId}`);
+            console.warn(`[SoundManager] No anthem files found for team: ${teamId} (tried lowercase: ${cleanTeamId})`);
             return;
         }
 
