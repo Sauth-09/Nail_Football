@@ -151,26 +151,45 @@ const Game = (() => {
     async function startGame(fieldId) {
         console.log(`[INFO] Oyun başlıyor: Saha ${fieldId}`);
 
-        // Fetch full field data
-        try {
-            const res = await fetch('/fields/fieldData.json');
-            const allFields = await res.json();
-            let field = allFields.find(f => f.id === fieldId);
-
-            if (!field) {
-                console.error('[ERROR] Saha bulunamadı:', fieldId);
+        // Handle custom fields
+        if (fieldId && fieldId.startsWith('custom_')) {
+            try {
+                const saved = localStorage.getItem('customFields');
+                if (saved) {
+                    const customFields = JSON.parse(saved);
+                    const customField = customFields.find(f => f.id === fieldId);
+                    if (customField) {
+                        currentField = customField;
+                    }
+                }
+            } catch (e) {}
+            
+            if (!currentField || currentField.id !== fieldId) {
+                console.error('[ERROR] Özel saha bulunamadı:', fieldId);
                 return;
             }
+        } else {
+            // Fetch full field data
+            try {
+                const res = await fetch('/fields/fieldData.json');
+                const allFields = await res.json();
+                let field = allFields.find(f => f.id === fieldId);
 
-            // Handle random field
-            if (field.isRandom) {
-                field = { ...field, nails: generateRandomNails(field) };
+                if (!field) {
+                    console.error('[ERROR] Saha bulunamadı:', fieldId);
+                    return;
+                }
+
+                // Handle random field
+                if (field.isRandom) {
+                    field = { ...field, nails: generateRandomNails(field) };
+                }
+
+                currentField = field;
+            } catch (error) {
+                console.error('[ERROR] Saha verisi yüklenemedi:', error);
+                return;
             }
-
-            currentField = field;
-        } catch (error) {
-            console.error('[ERROR] Saha verisi yüklenemedi:', error);
-            return;
         }
 
         // Reset game state
@@ -191,6 +210,9 @@ const Game = (() => {
 
         // Reset jokers for new game
         if (typeof JokerManager !== 'undefined') JokerManager.resetJokers();
+
+        // Reset match statistics
+        if (typeof MatchStats !== 'undefined') MatchStats.reset();
 
         // Initialize AI if vs_ai
         if (gameMode === 'vs_ai') {
@@ -486,6 +508,19 @@ const Game = (() => {
         const shotStartTime = Date.now();
         const settings = UIManager.getSettings();
 
+        // Record shot statistics
+        if (typeof MatchStats !== 'undefined') {
+            MatchStats.recordShot(currentPlayer, power);
+
+            // Record joker usage if active
+            if (typeof JokerManager !== 'undefined') {
+                const activeJoker = JokerManager.getActiveJoker();
+                if (activeJoker) {
+                    MatchStats.recordJokerUsed(currentPlayer, activeJoker.type);
+                }
+            }
+        }
+
         if (gameMode === 'local' || gameMode === 'vs_ai') {
             // Apply friction setting override
             if (settings.friction) currentField.friction = settings.friction;
@@ -495,6 +530,7 @@ const Game = (() => {
 
             const options = {
                 goalkeeperEnabled: settings.goalkeeperEnabled,
+                goalkeeperMode: settings.goalkeeperMode || (settings.goalkeeperEnabled ? 'patrol' : 'off'),
                 goalkeeperSize: settings.goalkeeperSize || 30,
                 shotStartTime: shotStartTime,
                 jokerOptions: jokerOptions
@@ -527,6 +563,11 @@ const Game = (() => {
     function handleCollisionEvent(event) {
         // Calculate speed from trajectory context
         const speed = event.speed || 5; // Default moderate speed
+
+        // Record collision in match stats
+        if (typeof MatchStats !== 'undefined') {
+            MatchStats.recordCollision(currentPlayer, event.type, speed);
+        }
 
         if (event.type === 'nail') {
             EffectsManager.playHitSound('nail', speed);
@@ -590,6 +631,11 @@ const Game = (() => {
             scores[scorer - 1]++;
             UIManager.updateScore(scores[0], scores[1]);
             AnimationManager.triggerScoreBounce(scorer);
+
+            // Record goal in match stats
+            if (typeof MatchStats !== 'undefined') {
+                MatchStats.recordGoal(scorer, ownGoal, currentPlayer);
+            }
 
             // Sound and animation
             const scorerTeamId = (typeof TeamManager !== 'undefined') ? TeamManager.getTeamId(scorer) : null;
@@ -760,7 +806,9 @@ const Game = (() => {
         if (scores[0] > scores[1]) winner = 1;
         else if (scores[1] > scores[0]) winner = 2;
 
-        UIManager.showGameOver(winner, scores[0], scores[1]);
+        // Get match statistics
+        const matchStatsData = (typeof MatchStats !== 'undefined') ? MatchStats.getStats() : null;
+        UIManager.showGameOver(winner, scores[0], scores[1], matchStatsData);
         console.log(`[INFO] Oyun bitti! Skor: ${scores[0]} - ${scores[1]}`);
 
         // AI Reaction for Game Over
@@ -815,9 +863,14 @@ const Game = (() => {
             gameActive = true;
             shotAngle = null;
 
-            // Reset jokers
+            // Reset jokers and stats
             if (typeof JokerManager !== 'undefined') {
                 JokerManager.resetJokers();
+            }
+            if (typeof MatchStats !== 'undefined') {
+                MatchStats.reset();
+            }
+            if (typeof JokerManager !== 'undefined') {
                 const settings = typeof UIManager !== 'undefined' ? UIManager.getSettings() : { goalkeeperEnabled: true };
                 GameRenderer.setGoalkeeperState(settings.goalkeeperEnabled, 0, false);
             }

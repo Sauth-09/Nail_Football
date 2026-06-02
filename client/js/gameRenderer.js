@@ -218,10 +218,43 @@ const GameRenderer = (() => {
             const gkWidth = 12;
             const gkHeight = (typeof UIManager !== 'undefined' ? UIManager.getSettings().goalkeeperSize : 30) || 30;
 
-            const currentY = goalkeeperFrozen ? (goalkeeperFrozenY !== null ? goalkeeperFrozenY : gkBaseY) : PhysicsClient.getGoalkeeperY(t, field, gkBaseY);
-            const gkColor = goalkeeperFrozen ? '#80DEEA' : '#E0E0E0';
-            drawGoalkeeper(ctx, gkLeftX, currentY, gkWidth, gkHeight, gkColor);
-            drawGoalkeeper(ctx, gkRightX, currentY, gkWidth, gkHeight, gkColor);
+            let gkLeftY, gkRightY;
+            const settings = typeof UIManager !== 'undefined' ? UIManager.getSettings() : { goalkeeperMode: 'patrol' };
+            const gkMode = settings.goalkeeperMode || 'patrol';
+
+            if (goalkeeperFrozen) {
+                const frozenY = goalkeeperFrozenY !== null ? goalkeeperFrozenY : gkBaseY;
+                gkLeftY = frozenY;
+                gkRightY = frozenY;
+            } else if (typeof PhysicsClient !== 'undefined' && PhysicsClient.isPlaying && PhysicsClient.isPlaying()) {
+                const frameData = typeof PhysicsClient.getCurrentPlaybackData === 'function' ? PhysicsClient.getCurrentPlaybackData() : null;
+                if (frameData && frameData.gkLeftY !== undefined && frameData.gkRightY !== undefined) {
+                    gkLeftY = frameData.gkLeftY;
+                    gkRightY = frameData.gkRightY;
+                } else {
+                    let t2 = goalkeeperShotStartTime;
+                    if (typeof PhysicsClient.getCurrentFrame === 'function') {
+                        t2 = goalkeeperShotStartTime + (PhysicsClient.getCurrentFrame() * (1000 / 60));
+                    }
+                    const patrolY = PhysicsClient.getGoalkeeperY(t2, field, gkBaseY);
+                    gkLeftY = patrolY;
+                    gkRightY = patrolY;
+                }
+            } else {
+                if (gkMode === 'smart') {
+                    gkLeftY = gkBaseY;
+                    gkRightY = gkBaseY;
+                } else {
+                    const patrolY = PhysicsClient.getGoalkeeperY(Date.now(), field, gkBaseY);
+                    gkLeftY = patrolY;
+                    gkRightY = patrolY;
+                }
+            }
+
+            const normalGkColor = gkMode === 'smart' ? '#1DDB87' : '#E0E0E0';
+            const gkColor = goalkeeperFrozen ? '#80DEEA' : normalGkColor;
+            drawGoalkeeper(ctx, gkLeftX, gkLeftY, gkWidth, gkHeight, gkColor);
+            drawGoalkeeper(ctx, gkRightX, gkRightY, gkWidth, gkHeight, gkColor);
 
             // Draw freeze effect indicator when frozen
             if (goalkeeperFrozen) {
@@ -231,10 +264,10 @@ const GameRenderer = (() => {
                 ctx.lineWidth = 2;
                 const r = (gkHeight / 2 + 4) * Math.min(scaleX, scaleY);
                 ctx.beginPath();
-                ctx.arc(gkLeftX * scaleX, currentY * scaleY, r, 0, Math.PI * 2);
+                ctx.arc(gkLeftX * scaleX, gkLeftY * scaleY, r, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.beginPath();
-                ctx.arc(gkRightX * scaleX, currentY * scaleY, r, 0, Math.PI * 2);
+                ctx.arc(gkRightX * scaleX, gkRightY * scaleY, r, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.restore();
             }

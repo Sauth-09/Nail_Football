@@ -87,7 +87,7 @@ const PhysicsClient = (() => {
      * @param {number} power - Shot power (0-1)
      * @param {Object} ballPos - Ball start position {x, y}
      * @param {Object} [options] - Optional settings (goalkeeperEnabled, shotStartTime, jokerOptions)
-     * @returns {Object} Result with trajectory and collision events
+     * @returns {Object} Result with trajectory and collisions
      */
     function simulateShot(field, angle, power, ballPos, options = {}) {
         // Apply joker power multiplier if active
@@ -105,11 +105,6 @@ const PhysicsClient = (() => {
         const goalTop = (field.fieldHeight - field.goalWidth) / 2;
         const goalBottom = (field.fieldHeight + field.goalWidth) / 2;
 
-        const trajectory = [{ x: ball.x, y: ball.y, t: 0 }];
-        const collisionEvents = []; // {type, index, x, y, frame}
-        let goalScored = null;
-        let frame = 0;
-
         const gkWidth = 12;
         const gkHeight = options.goalkeeperSize || 30;
         const gkBaseY = field.fieldHeight / 2;
@@ -121,6 +116,26 @@ const PhysicsClient = (() => {
         const shotStartTime = options.shotStartTime || 0;
         const isGkEnabled = options.goalkeeperEnabled === true && !joker.skipGoalkeeper;
         const isGkFrozen = joker.freezeGoalkeeper === true;
+
+        // Goalkeeper states for smart goalkeeper mode
+        const gkLeftState = { y: gkBaseY, predictionOffset: 0 };
+        const gkRightState = { y: gkBaseY, predictionOffset: 0 };
+
+        if (options.goalkeeperMode === 'smart') {
+            const seedL = Math.sin(angle * 12.34 + power * 56.78 + 1.23);
+            const seedR = Math.cos(angle * 87.65 - power * 43.21 + 4.56);
+            // Increase prediction error from 15 to 22 pixels so the GK isn't always perfectly centered
+            gkLeftState.predictionOffset = seedL * 22; 
+            gkRightState.predictionOffset = seedR * 22;
+        }
+
+        const gkLeftYStart = isGkFrozen ? (joker.frozenY !== undefined ? joker.frozenY : gkBaseY) : (options.goalkeeperMode === 'smart' ? gkBaseY : getGoalkeeperY(shotStartTime, field, gkBaseY));
+        const gkRightYStart = gkLeftYStart;
+
+        const trajectory = [{ x: ball.x, y: ball.y, t: 0, gkLeftY: gkLeftYStart, gkRightY: gkRightYStart }];
+        const collisionEvents = []; // {type, index, x, y, frame}
+        let goalScored = null;
+        let frame = 0;
 
         while (frame < MAX_FRAMES) {
             frame++;
@@ -205,13 +220,13 @@ const PhysicsClient = (() => {
             if (ball.x <= ball.radius && ball.y > goalTop && ball.y < goalBottom) {
                 console.log(`[PHYSICS-C] GOAL! Left side at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
                 goalScored = { side: 'left' };  // Sol kaleye gol
-                trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000 });
+                trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000, gkLeftY: gkLeftState.y, gkRightY: gkRightState.y });
                 break;
             }
             if (ball.x >= field.fieldWidth - ball.radius && ball.y > goalTop && ball.y < goalBottom) {
                 console.log(`[PHYSICS-C] GOAL! Right side at (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`);
                 goalScored = { side: 'right' }; // Sağ kaleye gol
-                trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000 });
+                trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000, gkLeftY: gkLeftState.y, gkRightY: gkRightState.y });
                 break;
             }
 
@@ -245,13 +260,72 @@ const PhysicsClient = (() => {
                 }
             }
 
+            // Calculate goalkeeper Y positions for this frame
+            let gkLeftY, gkRightY;
+
+            if (isGkFrozen) {
+                gkLeftY = joker.frozenY !== undefined ? joker.frozenY : gkBaseY;
+                gkRightY = joker.frozenY !== undefined ? joker.frozenY : gkBaseY;
+            } else if (options.goalkeeperMode === 'smart') {
+                // Nerfed the smart goalkeeper to make it possible to score
+                const SMART_GK_MAX_SPEED = 1.8;
+                const SMART_GK_REACTION_FRAMES = 15;
+                const SMART_GK_RETURN_SPEED = 1.0;
+                const halfH = gkHeight / 2;
+                const minY = halfH;
+                const maxY = field.fieldHeight - halfH;
+
+                // Left GK (defends left goal, reacts when ball.vx < 0)
+                if (ball.vx < 0 && frame >= SMART_GK_REACTION_FRAMES) {
+                    const targetY = Math.max(minY, Math.min(maxY, ball.y + gkLeftState.predictionOffset));
+                    const diffY = targetY - gkLeftState.y;
+                    if (Math.abs(diffY) > SMART_GK_MAX_SPEED) {
+                        gkLeftState.y += SMART_GK_MAX_SPEED * Math.sign(diffY);
+                    } else {
+                        gkLeftState.y = targetY;
+                    }
+                } else {
+                    const targetY = gkBaseY;
+                    const diffY = targetY - gkLeftState.y;
+                    if (Math.abs(diffY) > SMART_GK_RETURN_SPEED) {
+                        gkLeftState.y += SMART_GK_RETURN_SPEED * Math.sign(diffY);
+                    } else {
+                        gkLeftState.y = targetY;
+                    }
+                }
+                gkLeftY = gkLeftState.y;
+
+                // Right GK (defends right goal, reacts when ball.vx > 0)
+                if (ball.vx > 0 && frame >= SMART_GK_REACTION_FRAMES) {
+                    const targetY = Math.max(minY, Math.min(maxY, ball.y + gkRightState.predictionOffset));
+                    const diffY = targetY - gkRightState.y;
+                    if (Math.abs(diffY) > SMART_GK_MAX_SPEED) {
+                        gkRightState.y += SMART_GK_MAX_SPEED * Math.sign(diffY);
+                    } else {
+                        gkRightState.y = targetY;
+                    }
+                } else {
+                    const targetY = gkBaseY;
+                    const diffY = targetY - gkRightState.y;
+                    if (Math.abs(diffY) > SMART_GK_RETURN_SPEED) {
+                        gkRightState.y += SMART_GK_RETURN_SPEED * Math.sign(diffY);
+                    } else {
+                        gkRightState.y = targetY;
+                    }
+                }
+                gkRightY = gkRightState.y;
+            } else {
+                // Patrol mode or default sin-based movement
+                const currentTimeMs = shotStartTime + (frame * DT * 1000);
+                const patrolY = getGoalkeeperY(currentTimeMs, field, gkBaseY);
+                gkLeftY = patrolY;
+                gkRightY = patrolY;
+            }
+
             // Goalkeeper collisions
             if (isGkEnabled) {
-                const currentTimeMs = shotStartTime + (frame * DT * 1000);
-                const currentY = isGkFrozen ? (joker.frozenY !== undefined ? joker.frozenY : gkBaseY) : getGoalkeeperY(currentTimeMs, field, gkBaseY);
-
-                const gkLeft = { x: gkLeftX, y: currentY, width: gkWidth, height: gkHeight };
-                const gkRight = { x: gkRightX, y: currentY, width: gkWidth, height: gkHeight };
+                const gkLeft = { x: gkLeftX, y: gkLeftY, width: gkWidth, height: gkHeight };
+                const gkRight = { x: gkRightX, y: gkRightY, width: gkWidth, height: gkHeight };
 
                 const gks = [gkLeft, gkRight];
                 for (const gk of gks) {
@@ -303,11 +377,11 @@ const PhysicsClient = (() => {
             if (speed < MIN_SPEED) {
                 ball.vx = 0;
                 ball.vy = 0;
-                trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000 });
+                trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000, gkLeftY, gkRightY });
                 break;
             }
 
-            trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000 });
+            trajectory.push({ x: ball.x, y: ball.y, t: frame * DT * 1000, gkLeftY, gkRightY });
         }
 
         if (frame >= MAX_FRAMES) {
@@ -406,6 +480,17 @@ const PhysicsClient = (() => {
         return playback.currentFrame;
     }
 
+    /**
+     * Gets the data of the current playback frame
+     * @returns {Object|null}
+     */
+    function getCurrentPlaybackData() {
+        if (!playback.active || playback.currentFrame === 0 || playback.currentFrame > playback.trajectory.length) {
+            return null;
+        }
+        return playback.trajectory[playback.currentFrame - 1];
+    }
+
     return {
         simulateShot,
         startPlayback,
@@ -413,6 +498,7 @@ const PhysicsClient = (() => {
         isPlaying,
         stopPlayback,
         getCurrentFrame,
+        getCurrentPlaybackData,
         getGoalkeeperY,
         removeNail
     };

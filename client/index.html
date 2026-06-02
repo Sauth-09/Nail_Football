@@ -99,6 +99,10 @@
                     <span class="btn-icon">📖</span>
                     <span class="btn-text">NASIL OYNANIR</span>
                 </button>
+                <button id="btn-field-editor" class="menu-btn primary pulse-btn" style="margin-top: 10px; background: linear-gradient(135deg, #17b978, #0e8555);">
+                    <span class="btn-icon">✏️</span>
+                    <span class="btn-text">SAHA TASARLA</span>
+                </button>
             </div>
             <div class="menu-footer">
                 <p class="footer-text">🌍 Dünya genelinde rakiplerini bul!</p>
@@ -127,10 +131,11 @@
         <div class="field-settings" style="margin-top: 20px; text-align: center;">
             <div class="setting-row" style="justify-content: center; gap: 15px; margin-bottom: 5px;">
                 <label for="gk-toggle" style="font-weight: 600;">🥅 Hareketli Kaleci</label>
-                <label class="switch">
-                    <input type="checkbox" id="gk-toggle" checked>
-                    <span class="slider round"></span>
-                </label>
+                <select id="gk-toggle" class="menu-select" style="padding: 5px; border-radius: 5px; width: 100px;">
+                    <option value="off">Kapalı ❌</option>
+                    <option value="patrol" selected>Devriye 🔁</option>
+                    <option value="smart">Akıllı 🧠</option>
+                </select>
                 <select id="gk-size" class="menu-select" style="padding: 5px; border-radius: 5px; width: 80px;">
                     <option value="20">Kısa</option>
                     <option value="30" selected>Orta</option>
@@ -708,6 +713,69 @@
             <p id="game-over-winner" class="game-over-winner"></p>
             <p id="game-over-score" class="game-over-score"></p>
             <div id="game-over-elo" class="game-over-elo" style="display:none"></div>
+            
+            <!-- Match Statistics -->
+            <div id="game-over-stats" class="game-over-stats" style="display:none">
+                <h3 class="stats-title">📊 Maç İstatistikleri</h3>
+                <div class="stats-table">
+                    <div class="stats-header">
+                        <span class="stats-p1-name">🔵 Oyuncu 1</span>
+                        <span class="stats-label-header"></span>
+                        <span class="stats-p2-name">🔴 Oyuncu 2</span>
+                    </div>
+                    <div class="stats-row" data-stat="shots">
+                        <span class="stats-p1-val">0</span>
+                        <span class="stats-label">⚽ Atış</span>
+                        <span class="stats-p2-val">0</span>
+                    </div>
+                    <div class="stats-row" data-stat="goals">
+                        <span class="stats-p1-val">0</span>
+                        <span class="stats-label">🥅 Gol</span>
+                        <span class="stats-p2-val">0</span>
+                    </div>
+                    <div class="stats-row" data-stat="ownGoals">
+                        <span class="stats-p1-val">0</span>
+                        <span class="stats-label">😱 Kendi Kalesine</span>
+                        <span class="stats-p2-val">0</span>
+                    </div>
+                    <div class="stats-row" data-stat="accuracy">
+                        <span class="stats-p1-val">0%</span>
+                        <span class="stats-label">🎯 İsabet</span>
+                        <span class="stats-p2-val">0%</span>
+                    </div>
+                    <div class="stats-row" data-stat="nailHits">
+                        <span class="stats-p1-val">0</span>
+                        <span class="stats-label">📌 Çivi Çarpma</span>
+                        <span class="stats-p2-val">0</span>
+                    </div>
+                    <div class="stats-row" data-stat="wallHits">
+                        <span class="stats-p1-val">0</span>
+                        <span class="stats-label">🧱 Duvar Çarpma</span>
+                        <span class="stats-p2-val">0</span>
+                    </div>
+                    <div class="stats-row" data-stat="goalkeeperHits">
+                        <span class="stats-p1-val">0</span>
+                        <span class="stats-label">🧤 Kaleciye Çarpma</span>
+                        <span class="stats-p2-val">0</span>
+                    </div>
+                    <div class="stats-row" data-stat="avgPower">
+                        <span class="stats-p1-val">0%</span>
+                        <span class="stats-label">💪 Ort. Güç</span>
+                        <span class="stats-p2-val">0%</span>
+                    </div>
+                    <div class="stats-row" data-stat="maxPower">
+                        <span class="stats-p1-val">0%</span>
+                        <span class="stats-label">🔥 Max Güç</span>
+                        <span class="stats-p2-val">0%</span>
+                    </div>
+                    <div class="stats-row" data-stat="jokerUsed">
+                        <span class="stats-p1-val">—</span>
+                        <span class="stats-label">🃏 Joker</span>
+                        <span class="stats-p2-val">—</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="modal-buttons">
                 <button id="btn-replay" class="menu-btn primary">TEKRAR OYNA</button>
                 <button id="btn-to-menu" class="menu-btn">ANA MENÜ</button>
@@ -789,10 +857,11 @@
             <div class="form-group" style="margin-top: 15px; text-align: center;">
                 <div class="setting-row" style="justify-content: center; gap: 15px; margin-bottom: 5px;">
                     <label for="challenge-gk-toggle" style="font-weight: 600;">🥅 Hareketli Kaleci</label>
-                    <label class="switch">
-                        <input type="checkbox" id="challenge-gk-toggle" checked>
-                        <span class="slider round"></span>
-                    </label>
+                    <select id="challenge-gk-toggle" class="menu-select" style="padding: 5px; border-radius: 5px; width: 100px;">
+                        <option value="off">Kapalı ❌</option>
+                        <option value="patrol" selected>Devriye 🔁</option>
+                        <option value="smart">Akıllı 🧠</option>
+                    </select>
                     <select id="challenge-gk-size" class="menu-select" style="padding: 5px; border-radius: 5px; width: 80px;">
                         <option value="20">Kısa</option>
                         <option value="30" selected>Orta</option>
@@ -860,6 +929,40 @@
             <div class="vs-countdown">3...</div>
         </div>
     </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- Saha Editörü Ekranı -->
+    <!-- ═══════════════════════════════════════ -->
+    <div id="field-editor-screen" class="screen">
+        <div class="screen-header">
+            <button id="btn-back-editor" class="back-btn">← Menü</button>
+            <h2>Saha Editörü</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="editor-container">
+            <div class="editor-canvas-container">
+                <canvas id="editor-canvas" width="900" height="500"></canvas>
+            </div>
+            <div class="editor-sidebar">
+                <div class="editor-tools">
+                    <h3 style="color: #64ffda; margin-top: 0; margin-bottom: 10px;">Araçlar</h3>
+                    <button id="tool-add" class="menu-btn active">➕ Çivi Ekle</button>
+                    <button id="tool-move" class="menu-btn">🤚 Sürükle / Seç</button>
+                    <button id="tool-delete" class="menu-btn danger">🗑️ Sil</button>
+                    <div class="nail-count-display" style="margin-top: 15px; font-weight: bold; color: #17b978; text-align: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                        Çivi: <span id="editor-nail-count">0</span> / 50
+                    </div>
+                </div>
+                <div class="editor-settings" style="margin-top: 20px;">
+                    <h3 style="color: #64ffda; margin-top: 0; margin-bottom: 10px;">Saha Bilgileri</h3>
+                    <input type="text" id="editor-field-name" placeholder="Saha Adı (Örn: Ölüm Kapanı)" class="editor-input" maxlength="20">
+                    <button id="btn-save-field" class="menu-btn primary pulse-btn" style="margin-top: 15px; width: 100%;">💾 Kaydet</button>
+                    <button id="btn-clear-field" class="menu-btn secondary" style="margin-top: 10px; width: 100%;">🧹 Tümünü Temizle</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- JavaScript Modules -->
     <!-- AI Modules -->
@@ -887,6 +990,8 @@
     <script src="js/challengeUI.js?v=v1.5"></script>
     <script src="js/leaderboard.js?v=v1.5"></script>
     <script src="js/tournament.js?v=v1.5"></script>
+    <script src="js/matchStats.js?v=v2.1"></script>
+    <script src="js/fieldEditor.js?v=v1.0"></script>
     <script src="js/uiManager.js?v=v2.0.1"></script>
     <script src="js/main.js?v=v2.0.1"></script>
     <script>

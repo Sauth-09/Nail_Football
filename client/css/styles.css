@@ -1222,12 +1222,15 @@ body {
 /* ═══════════════════════════════════════════════ */
 
 .game-over-content {
-    padding: 40px 30px;
+    padding: 20px 20px;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .game-over-trophy {
-    font-size: 4rem;
-    margin-bottom: 10px;
+    font-size: 2.5rem;
+    margin-bottom: 5px;
     animation: bounce 1s ease infinite;
 }
 
@@ -1244,17 +1247,110 @@ body {
 }
 
 .game-over-winner {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    margin-top: 12px;
+    margin-top: 5px;
     color: #f1c40f;
 }
 
 .game-over-score {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 800;
-    margin-top: 8px;
+    margin-top: 5px;
     letter-spacing: 4px;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* Match Statistics (Game Over)                    */
+/* ═══════════════════════════════════════════════ */
+
+.game-over-stats {
+    margin-top: 10px;
+    /* removed max-height and overflow to fix double scroll */
+}
+
+.stats-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #64ffda;
+    margin-bottom: 8px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+.stats-table {
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(10, 25, 47, 0.5);
+    border: 1px solid rgba(100, 255, 218, 0.1);
+}
+
+.stats-header {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    padding: 6px 10px;
+    background: rgba(100, 255, 218, 0.08);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #ccd6f6;
+}
+
+.stats-header span {
+    text-align: center;
+}
+
+.stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    padding: 4px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.2s;
+    align-items: center;
+}
+
+.stats-row:last-child {
+    border-bottom: none;
+}
+
+.stats-row:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.stats-row:hover {
+    background: rgba(100, 255, 218, 0.04);
+}
+
+.stats-label {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #8892b0;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.stats-p1-val,
+.stats-p2-val {
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #ccd6f6;
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-p1-val.winner {
+    color: #2196F3;
+    text-shadow: 0 0 8px rgba(33, 150, 243, 0.4);
+}
+
+.stats-p2-val.winner {
+    color: #F44336;
+    text-shadow: 0 0 8px rgba(244, 67, 54, 0.4);
+}
+
+.stats-p1-val.equal,
+.stats-p2-val.equal {
+    color: #f1c40f;
 }
 
 /* ═══════════════════════════════════════════════ */
@@ -2522,5 +2618,94 @@ body {
     }
     .fan-row-3 {
         display: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════ */
+/* Saha Editörü (Field Editor)                     */
+/* ═══════════════════════════════════════════════ */
+
+.editor-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    align-items: flex-start;
+}
+
+.editor-canvas-container {
+    flex: 1;
+    background: #112240;
+    border: 2px solid rgba(100, 255, 218, 0.3);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+#editor-canvas {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 9/5;
+    display: block;
+    cursor: crosshair;
+}
+
+.editor-sidebar {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.editor-tools, .editor-settings {
+    background: rgba(10, 25, 47, 0.7);
+    border: 1px solid rgba(100, 255, 218, 0.1);
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.editor-tools .menu-btn {
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    padding: 10px;
+    opacity: 0.7;
+    transition: all 0.2s;
+}
+
+.editor-tools .menu-btn.active {
+    opacity: 1;
+    border-color: #64ffda;
+    box-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+}
+
+.editor-input {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(100, 255, 218, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.editor-input:focus {
+    border-color: #64ffda;
+    box-shadow: 0 0 8px rgba(100, 255, 218, 0.2);
+}
+
+@media (max-width: 900px) {
+    .editor-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    .editor-sidebar {
+        width: 100%;
+        max-width: 600px;
     }
 }

@@ -24,6 +24,7 @@ const UIManager = (() => {
         sfx: true,
         vibration: true,
         goalkeeperEnabled: true,
+        goalkeeperMode: 'patrol',
         goalkeeperSize: 30,
         ballTheme: 'classic',
         nailTheme: 'metal',
@@ -91,6 +92,13 @@ const UIManager = (() => {
         if (btnMultiplayer) btnMultiplayer.addEventListener('click', () => {
             SoundManager.playClick();
             showScreen('multiplayer-lobby');
+        });
+
+        const btnFieldEditor = document.getElementById('btn-field-editor');
+        if (btnFieldEditor) btnFieldEditor.addEventListener('click', () => {
+            SoundManager.playClick();
+            showScreen('field-editor-screen');
+            if (typeof FieldEditor !== 'undefined') FieldEditor.openEditor();
         });
 
         if (btnTournament) btnTournament.addEventListener('click', () => {
@@ -574,7 +582,8 @@ const UIManager = (() => {
         const gkSize = document.getElementById('gk-size');
         if (gkToggle) {
             gkToggle.addEventListener('change', () => {
-                settings.goalkeeperEnabled = gkToggle.checked;
+                settings.goalkeeperMode = gkToggle.value;
+                settings.goalkeeperEnabled = gkToggle.value !== 'off';
                 saveSettings();
             });
         }
@@ -590,7 +599,8 @@ const UIManager = (() => {
         const challengeGkSize = document.getElementById('challenge-gk-size');
         if (challengeGkToggle) {
             challengeGkToggle.addEventListener('change', () => {
-                settings.goalkeeperEnabled = challengeGkToggle.checked;
+                settings.goalkeeperMode = challengeGkToggle.value;
+                settings.goalkeeperEnabled = challengeGkToggle.value !== 'off';
                 saveSettings();
             });
         }
@@ -685,6 +695,19 @@ const UIManager = (() => {
         fetch('/fields/fieldData.json')
             .then(res => res.json())
             .then(fields => {
+                // Özel sahaları (customFields) ekle
+                let customFields = [];
+                try {
+                    const saved = localStorage.getItem('customFields');
+                    if (saved) customFields = JSON.parse(saved);
+                } catch(e) {}
+                
+                customFields.forEach(cf => {
+                    cf.name = '🛠️ ' + cf.name;
+                    cf.isCustom = true;
+                    fields.push(cf);
+                });
+
                 availableFields = fields;
                 buildFieldGallery(fields);
                 isMultiplayerFieldSelect = false;
@@ -1028,13 +1051,14 @@ const UIManager = (() => {
     // Modals
     // ═══════════════════════════════════════════
 
-    /**
+     /**
      * Shows the game over modal
      * @param {number} winner - Winning player (1 or 2) or 0 for draw
      * @param {number} p1Score
      * @param {number} p2Score
+     * @param {Object} [stats] - Match statistics from MatchStats
      */
-    function showGameOver(winner, p1Score, p2Score) {
+    function showGameOver(winner, p1Score, p2Score, stats) {
         const titleEl = document.getElementById('game-over-title');
         const winnerEl = document.getElementById('game-over-winner');
         const scoreEl = document.getElementById('game-over-score');
@@ -1057,6 +1081,96 @@ const UIManager = (() => {
         if (eloEl) {
             eloEl.style.display = 'none'; // clear previous
             eloEl.innerHTML = '';
+        }
+
+        // Render match statistics
+        const statsEl = document.getElementById('game-over-stats');
+        if (statsEl) {
+            if (stats) {
+                statsEl.style.display = 'block';
+
+                // Helper to populate and highlight
+                const updateStatRow = (statName, val1, val2, higherIsBetter = true) => {
+                    const row = statsEl.querySelector(`.stats-row[data-stat="${statName}"]`);
+                    if (!row) return;
+
+                    const p1ValEl = row.querySelector('.stats-p1-val');
+                    const p2ValEl = row.querySelector('.stats-p2-val');
+
+                    if (!p1ValEl || !p2ValEl) return;
+
+                    // Display values formatting
+                    let displayVal1 = val1;
+                    let displayVal2 = val2;
+
+                    if (statName === 'accuracy' || statName === 'avgPower' || statName === 'maxPower') {
+                        displayVal1 = `${val1}%`;
+                        displayVal2 = `${val2}%`;
+                    } else if (statName === 'jokerUsed') {
+                        const jokerNames = {
+                            flamingBall: '🔥 Alevli',
+                            freezeGoalkeeper: '❄️ Dondur',
+                            destroyNail: '📌 Yok Et'
+                        };
+                        displayVal1 = val1 ? (jokerNames[val1] || val1) : '—';
+                        displayVal2 = val2 ? (jokerNames[val2] || val2) : '—';
+                    }
+
+                    p1ValEl.textContent = displayVal1;
+                    p2ValEl.textContent = displayVal2;
+
+                    // Reset classes
+                    p1ValEl.className = 'stats-p1-val';
+                    p2ValEl.className = 'stats-p2-val';
+
+                    // Highlighting (skip for jokerUsed)
+                    if (statName === 'jokerUsed') return;
+
+                    const num1 = parseFloat(val1);
+                    const num2 = parseFloat(val2);
+
+                    if (!isNaN(num1) && !isNaN(num2)) {
+                        if (num1 === num2) {
+                            p1ValEl.classList.add('equal');
+                            p2ValEl.classList.add('equal');
+                        } else {
+                            const p1Won = higherIsBetter ? (num1 > num2) : (num1 < num2);
+                            if (p1Won) {
+                                p1ValEl.classList.add('winner');
+                            } else {
+                                p2ValEl.classList.add('winner');
+                            }
+                        }
+                    }
+                };
+
+                // Sync custom names if TeamManager is available
+                if (typeof TeamManager !== 'undefined') {
+                    const p1NameEl = statsEl.querySelector('.stats-p1-name');
+                    const p2NameEl = statsEl.querySelector('.stats-p2-name');
+                    if (p1NameEl) {
+                        const t1 = TeamManager.getTeam(1);
+                        p1NameEl.textContent = t1 ? `🔵 ${t1.name}` : '🔵 Oyuncu 1';
+                    }
+                    if (p2NameEl) {
+                        const t2 = TeamManager.getTeam(2);
+                        p2NameEl.textContent = t2 ? `🔴 ${t2.name}` : '🔴 Oyuncu 2';
+                    }
+                }
+
+                updateStatRow('shots', stats.p1.shots, stats.p2.shots);
+                updateStatRow('goals', stats.p1.goals, stats.p2.goals);
+                updateStatRow('ownGoals', stats.p1.ownGoals, stats.p2.ownGoals, false);
+                updateStatRow('accuracy', stats.p1.accuracy, stats.p2.accuracy);
+                updateStatRow('nailHits', stats.p1.nailHits, stats.p2.nailHits);
+                updateStatRow('wallHits', stats.p1.wallHits, stats.p2.wallHits);
+                updateStatRow('goalkeeperHits', stats.p1.goalkeeperHits, stats.p2.goalkeeperHits);
+                updateStatRow('avgPower', stats.p1.avgPower, stats.p2.avgPower);
+                updateStatRow('maxPower', stats.p1.maxPower, stats.p2.maxPower);
+                updateStatRow('jokerUsed', stats.p1.jokerUsed, stats.p2.jokerUsed);
+            } else {
+                statsEl.style.display = 'none';
+            }
         }
 
         showModal('game-over-modal');
@@ -1276,12 +1390,13 @@ const UIManager = (() => {
 
         const gkToggle = document.getElementById('gk-toggle');
         const gkSize = document.getElementById('gk-size');
-        if (gkToggle) gkToggle.checked = settings.goalkeeperEnabled;
+        const gkMode = settings.goalkeeperMode || (settings.goalkeeperEnabled ? 'patrol' : 'off');
+        if (gkToggle) gkToggle.value = gkMode;
         if (gkSize && settings.goalkeeperSize) gkSize.value = settings.goalkeeperSize;
 
         const challengeGkToggle = document.getElementById('challenge-gk-toggle');
         const challengeGkSize = document.getElementById('challenge-gk-size');
-        if (challengeGkToggle) challengeGkToggle.checked = settings.goalkeeperEnabled;
+        if (challengeGkToggle) challengeGkToggle.value = gkMode;
         if (challengeGkSize && settings.goalkeeperSize) challengeGkSize.value = settings.goalkeeperSize;
 
         const volumeLabel = document.getElementById('volume-label');
