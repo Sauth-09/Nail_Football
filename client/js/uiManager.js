@@ -842,6 +842,45 @@ const UIManager = (() => {
             descEl.textContent = field.description || '';
             card.appendChild(descEl);
 
+            if (field.isCustom) {
+                const actionRow = document.createElement('div');
+                actionRow.style.display = 'flex';
+                actionRow.style.justifyContent = 'space-between';
+                actionRow.style.marginTop = '10px';
+                actionRow.style.gap = '5px';
+                
+                const editBtn = document.createElement('button');
+                editBtn.className = 'menu-btn';
+                editBtn.style.padding = '4px 8px';
+                editBtn.style.fontSize = '0.7em';
+                editBtn.style.flex = '1';
+                editBtn.textContent = '✏️ Düzenle';
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    SoundManager.playClick();
+                    showScreen('field-editor-screen');
+                    if (typeof FieldEditor !== 'undefined') FieldEditor.openEditor(field);
+                };
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'menu-btn danger';
+                deleteBtn.style.padding = '4px 8px';
+                deleteBtn.style.fontSize = '0.7em';
+                deleteBtn.style.flex = '1';
+                deleteBtn.textContent = '🗑️ Sil';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    SoundManager.playClick();
+                    if (typeof FieldEditor !== 'undefined' && FieldEditor.deleteCustomField(field.id)) {
+                        showFieldSelect(); // Refresh fields
+                    }
+                };
+                
+                actionRow.appendChild(editBtn);
+                actionRow.appendChild(deleteBtn);
+                card.appendChild(actionRow);
+            }
+
             card.addEventListener('click', () => {
                 SoundManager.playClick();
                 document.querySelectorAll('.field-card').forEach(c => c.classList.remove('selected'));

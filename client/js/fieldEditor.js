@@ -63,14 +63,36 @@ const FieldEditor = (() => {
         canvas.addEventListener('touchend', handleTouch, { passive: false });
     }
 
-    function openEditor() {
+    function openEditor(existingField = null) {
         isEditorActive = true;
-        field.nails = [];
-        field.id = 'custom_' + Date.now();
-        document.getElementById('editor-field-name').value = '';
+        if (existingField) {
+            field = JSON.parse(JSON.stringify(existingField)); // Deep copy
+            document.getElementById('editor-field-name').value = field.name.replace('🛠️ ', '');
+        } else {
+            // Yeni saha varsayılanları
+            field.id = 'custom_' + Date.now();
+            field.name = '';
+            field.nails = [];
+            document.getElementById('editor-field-name').value = '';
+        }
         setTool('add');
         updateNailCount();
         render();
+    }
+
+    function deleteCustomField(fieldId) {
+        if (!confirm('Bu özel sahayı tamamen silmek istediğinize emin misiniz?')) return false;
+        
+        try {
+            const saved = localStorage.getItem('customFields');
+            if (saved) {
+                let customFields = JSON.parse(saved);
+                customFields = customFields.filter(f => f.id !== fieldId);
+                localStorage.setItem('customFields', JSON.stringify(customFields));
+                return true;
+            }
+        } catch(e) {}
+        return false;
     }
 
     function closeEditor() {
@@ -231,7 +253,6 @@ const FieldEditor = (() => {
         }
 
         field.name = nameInput;
-        field.id = 'custom_' + Date.now(); // yeni id
 
         // localStorage'a kaydet
         let customFields = [];
@@ -240,10 +261,24 @@ const FieldEditor = (() => {
             if (saved) customFields = JSON.parse(saved);
         } catch(e) {}
 
-        customFields.push(JSON.parse(JSON.stringify(field)));
-        localStorage.setItem('customFields', JSON.stringify(customFields));
+        const existingIndex = customFields.findIndex(f => f.id === field.id);
+        
+        if (existingIndex !== -1) {
+            // Varolanı güncelle
+            customFields[existingIndex] = JSON.parse(JSON.stringify(field));
+            alert(`Saha "${field.name}" başarıyla güncellendi!`);
+        } else {
+            // Limit kontrolü
+            if (customFields.length >= 10) {
+                alert('Maksimum saha sınırına (10) ulaştınız. Yeni saha eklemek için mevcut olanlardan birini silmelisiniz.');
+                return;
+            }
+            // Yeni ekle
+            customFields.push(JSON.parse(JSON.stringify(field)));
+            alert(`Saha "${field.name}" başarıyla kaydedildi!`);
+        }
 
-        alert(`Saha "${field.name}" başarıyla kaydedildi!`);
+        localStorage.setItem('customFields', JSON.stringify(customFields));
         closeEditor();
     }
 
@@ -304,7 +339,8 @@ const FieldEditor = (() => {
 
     return {
         init,
-        openEditor
+        openEditor,
+        deleteCustomField
     };
 })();
 
