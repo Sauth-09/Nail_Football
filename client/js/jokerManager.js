@@ -59,6 +59,9 @@ const JokerManager = (() => {
     /** @type {Function|null} Callback when nail is selected */
     let onNailSelectCallback = null;
 
+    /** @type {Object|null} Stores the removed nail data for restoration { nail: {x,y}, index: number } */
+    let removedNailData = null;
+
     // ═══════════════════════════════════════════
     // Public API
     // ═══════════════════════════════════════════
@@ -175,6 +178,43 @@ const JokerManager = (() => {
     }
 
     /**
+     * Stores the removed nail data so it can be restored later
+     * @param {Object} nail - The nail object { x, y }
+     * @param {number} index - Original index in field.nails array
+     */
+    function setRemovedNail(nail, index) {
+        removedNailData = { nail: { ...nail }, index };
+        console.log(`[JokerManager] Removed nail stored: index=${index}, x=${nail.x}, y=${nail.y}`);
+    }
+
+    /**
+     * Gets the removed nail data (if any)
+     * @returns {Object|null} { nail: {x,y}, index: number } or null
+     */
+    function getRemovedNail() {
+        return removedNailData;
+    }
+
+    /**
+     * Restores the previously removed nail to the field
+     * @param {Object} field - Field configuration with nails array
+     * @returns {boolean} Whether restoration was successful
+     */
+    function restoreRemovedNail(field) {
+        if (!removedNailData || !field || !field.nails) {
+            return false;
+        }
+
+        // Insert nail back at its original index (or at end if index is out of bounds)
+        const insertIndex = Math.min(removedNailData.index, field.nails.length);
+        field.nails.splice(insertIndex, 0, removedNailData.nail);
+
+        console.log(`[JokerManager] Nail restored at index ${insertIndex}. Total nails: ${field.nails.length}`);
+        removedNailData = null;
+        return true;
+    }
+
+    /**
      * Cancels nail selection mode
      */
     function cancelNailSelect() {
@@ -198,6 +238,7 @@ const JokerManager = (() => {
         activeJoker = null;
         nailSelectMode = false;
         onNailSelectCallback = null;
+        removedNailData = null;
     }
 
     return {
@@ -211,6 +252,9 @@ const JokerManager = (() => {
         isNailSelectMode,
         clearActiveJoker,
         cancelNailSelect,
-        resetJokers
+        resetJokers,
+        setRemovedNail,
+        getRemovedNail,
+        restoreRemovedNail
     };
 })();

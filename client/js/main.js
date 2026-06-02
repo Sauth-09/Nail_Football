@@ -659,6 +659,15 @@ const Game = (() => {
 
         if (typeof JokerManager !== 'undefined') {
             JokerManager.clearActiveJoker();
+
+            // Restore temporarily removed nail (from destroyNail joker)
+            if (JokerManager.getRemovedNail() && currentField) {
+                JokerManager.restoreRemovedNail(currentField);
+                // Rebuild field visuals to show the restored nail
+                GameRenderer.setField(currentField);
+                GameRenderer.setBallPosition(ballPos.x, ballPos.y);
+            }
+
             const settings = typeof UIManager !== 'undefined' ? UIManager.getSettings() : { goalkeeperEnabled: true };
             GameRenderer.setGoalkeeperState(settings.goalkeeperEnabled, 0, false);
         }
@@ -734,6 +743,12 @@ const Game = (() => {
         AnimationManager.setBallPulse(false);
 
         if (typeof JokerManager !== 'undefined') {
+            // Restore temporarily removed nail before clearing joker state
+            if (JokerManager.getRemovedNail() && currentField) {
+                JokerManager.restoreRemovedNail(currentField);
+                GameRenderer.setField(currentField);
+            }
+
             JokerManager.clearActiveJoker();
             const settings = typeof UIManager !== 'undefined' ? UIManager.getSettings() : { goalkeeperEnabled: true };
             GameRenderer.setGoalkeeperState(settings.goalkeeperEnabled, 0, false);

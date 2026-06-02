@@ -1466,16 +1466,22 @@ const UIManager = (() => {
 
         // Enter nail select mode in JokerManager
         JokerManager.enterNailSelectMode((nailIndex) => {
-            // Nail selected - remove it from field
+            // Nail selected - temporarily remove it from field (restored after shot)
             const field = Game.getCurrentField();
             if (field && typeof PhysicsClient !== 'undefined') {
+                // Store nail data before removal so it can be restored after the shot
+                const nailToRemove = field.nails[nailIndex];
+                if (nailToRemove) {
+                    JokerManager.setRemovedNail(nailToRemove, nailIndex);
+                }
+
                 PhysicsClient.removeNail(field, nailIndex);
 
                 // Rebuild field visuals
                 GameRenderer.setField(field);
                 GameRenderer.setBallPosition(Game.getBallPos().x, Game.getBallPos().y);
 
-                showNotification('📌 Çivi yok edildi!');
+                showNotification('📌 Çivi geçici olarak yok edildi!');
                 SoundManager.playClick();
             }
 
