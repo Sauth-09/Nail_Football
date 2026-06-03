@@ -361,9 +361,18 @@ const GameRenderer = (() => {
     }
 
     /**
-     * Draws a capsule-shaped goalkeeper
+     * Draws a capsule-shaped goalkeeper or a realistic figure based on settings
      */
     function drawGoalkeeper(ctx, x, y, w, h, color) {
+        const settings = typeof UIManager !== 'undefined' ? UIManager.getSettings() : { goalkeeperStyle: 'classic' };
+        const style = settings.goalkeeperStyle || 'classic';
+
+        if (style === 'realistic') {
+            const isLeft = x < (field ? field.fieldWidth / 2 : 450);
+            drawRealisticGoalkeeper(ctx, x, y, w, h, color, isLeft);
+            return;
+        }
+
         ctx.save();
         ctx.fillStyle = color;
         // Draw capsule
@@ -384,6 +393,220 @@ const GameRenderer = (() => {
 
         ctx.strokeStyle = '#333';
         ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    /**
+     * Draws a highly detailed top-down goalkeeper figure with jersey, cap, and gloves (optimized & team-themed)
+     */
+    function drawRealisticGoalkeeper(ctx, x, y, w, h, color, isLeft) {
+        ctx.save();
+
+        const sX = scaleX;
+        const sY = scaleY;
+        const sMin = Math.min(sX, sY);
+
+        // Direction facing the field: Left goalkeeper faces right (1), right goalkeeper faces left (-1)
+        const dir = isLeft ? 1 : -1;
+
+        // Base colors
+        const skinColor = '#ffdbac'; // Skin tone
+        let jerseyColor = color; // Dynamic jersey color (smart/patrol/frozen)
+        let secondaryColor = '#ffffff'; // Secondary jersey color
+        let gloveColor = '#ff5722'; // High visibility orange gloves
+        let capColor = '#1e88e5'; // Team blue cap
+        let numberColor = '#ffffff'; // Jersey number color
+
+        // Get team information for team-compatible goalkeeper jerseys
+        const team = typeof TeamManager !== 'undefined' ? TeamManager.getTeam(isLeft ? 1 : 2) : null;
+        if (team && team.colors) {
+            jerseyColor = team.colors[0];
+            secondaryColor = team.colors[1] || '#ffffff';
+            capColor = team.colors[1] || team.colors[0];
+            
+            // Adjust number color for readability
+            const upperColor = jerseyColor.toUpperCase();
+            if (upperColor === '#FFFFFF' || upperColor === '#FFED00' || upperColor === '#FFC72C') {
+                numberColor = '#000000';
+            }
+        }
+
+        // If frozen, make gloves, cap and jersey icy too
+        const isFrozen = (color === '#80DEEA');
+        if (isFrozen) {
+            jerseyColor = '#80DEEA';
+            secondaryColor = '#b2ebf2';
+            gloveColor = '#b2ebf2';
+            capColor = '#00acc1';
+            numberColor = '#ffffff';
+        }
+
+        // --- 1. Draw Manual Drop Shadow (Extremely High Performance alternative to ctx.shadowColor) ---
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        ctx.beginPath();
+        const rShadow = (w / 2) * 1.35;
+        const shadowX = x + dir * 2.5;
+        const shadowY = y + 3.5;
+        ctx.arc(shadowX * sX, (shadowY - h / 2 + rShadow) * sY, rShadow * sMin, Math.PI, 0);
+        ctx.arc(shadowX * sX, (shadowY + h / 2 - rShadow) * sY, rShadow * sMin, 0, Math.PI);
+        ctx.closePath();
+        ctx.fill();
+
+        // --- 2. Draw Arms & Gloves ---
+        const gloveRadius = (w * 0.7) * sMin;
+        
+        // Top Hand & Arm
+        const topGloveY = (y - h / 2 + w / 2);
+        
+        // Sleeve (jersey colored upper arm)
+        ctx.strokeStyle = jerseyColor;
+        ctx.lineWidth = w * 0.85 * sMin;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x * sX, (y - h / 5) * sY);
+        ctx.lineTo(x * sX, topGloveY * sY);
+        ctx.stroke();
+
+        // Forearm skin
+        ctx.strokeStyle = skinColor;
+        ctx.lineWidth = w * 0.55 * sMin;
+        ctx.beginPath();
+        ctx.moveTo(x * sX, (topGloveY + 1) * sY);
+        ctx.lineTo(x * sX, topGloveY * sY);
+        ctx.stroke();
+
+        // Top Glove (detailed)
+        ctx.fillStyle = gloveColor;
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 1 * sMin;
+        ctx.beginPath();
+        ctx.arc(x * sX, topGloveY * sY, gloveRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Fingers on Top Glove
+        ctx.strokeStyle = isFrozen ? '#ffffff' : '#000000';
+        ctx.lineWidth = 1 * sMin;
+        for (let i = -1; i <= 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo((x * sX) + (i * 2) * sMin, topGloveY * sY);
+            ctx.lineTo((x * sX) + (dir * 5) * sMin + (i * 1.5) * sMin, (topGloveY * sY) + (i * 2) * sMin);
+            ctx.stroke();
+        }
+
+        // Bottom Hand & Arm
+        const bottomGloveY = (y + h / 2 - w / 2);
+        
+        // Sleeve
+        ctx.strokeStyle = jerseyColor;
+        ctx.lineWidth = w * 0.85 * sMin;
+        ctx.beginPath();
+        ctx.moveTo(x * sX, (y + h / 5) * sY);
+        ctx.lineTo(x * sX, bottomGloveY * sY);
+        ctx.stroke();
+
+        // Forearm skin
+        ctx.strokeStyle = skinColor;
+        ctx.lineWidth = w * 0.55 * sMin;
+        ctx.beginPath();
+        ctx.moveTo(x * sX, (bottomGloveY - 1) * sY);
+        ctx.lineTo(x * sX, bottomGloveY * sY);
+        ctx.stroke();
+
+        // Bottom Glove (detailed)
+        ctx.fillStyle = gloveColor;
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 1 * sMin;
+        ctx.beginPath();
+        ctx.arc(x * sX, bottomGloveY * sY, gloveRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Fingers on Bottom Glove
+        for (let i = -1; i <= 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo((x * sX) + (i * 2) * sMin, bottomGloveY * sY);
+            ctx.lineTo((x * sX) + (dir * 5) * sMin + (i * 1.5) * sMin, (bottomGloveY * sY) + (i * 2) * sMin);
+            ctx.stroke();
+        }
+
+        // --- 3. Draw Torso (Jersey & Shorts) ---
+        // Draw Shorts/Pants base
+        ctx.fillStyle = '#222222'; // Black goalie shorts
+        const shortsW = w * 1.25;
+        const shortsH = h * 0.35;
+        ctx.beginPath();
+        ctx.roundRect((x - shortsW / 2) * sX, (y - shortsH / 2) * sY, shortsW * sX, shortsH * sY, 3 * sMin);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw Jersey torso
+        ctx.fillStyle = jerseyColor;
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 1.5 * sMin;
+        const torsoW = w * 1.5;
+        const torsoH = h * 0.45;
+        const torsoX = x - torsoW / 2;
+        const torsoY = y - torsoH / 2;
+        ctx.beginPath();
+        ctx.roundRect(torsoX * sX, torsoY * sY, torsoW * sX, torsoH * sY, 5 * sMin);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw details on jersey (e.g. horizontal design stripe)
+        ctx.fillStyle = isFrozen ? 'rgba(255, 255, 255, 0.3)' : secondaryColor;
+        ctx.beginPath();
+        ctx.rect((x - torsoW / 2) * sX, (y - torsoH / 6) * sY, torsoW * sX, (torsoH / 3) * sY);
+        ctx.fill();
+
+        // Draw Jersey Number '1' on the back (facing away from the field)
+        ctx.fillStyle = numberColor;
+        ctx.font = `bold ${8 * sMin}px 'Outfit', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const numX = x - (dir * 4.5);
+        ctx.fillText('1', numX * sX, y * sY);
+
+        // --- 4. Draw Head & Cap ---
+        const headRadius = (w * 0.6) * sMin;
+        
+        // Head Skin
+        ctx.fillStyle = skinColor;
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 1 * sMin;
+        ctx.beginPath();
+        ctx.arc(x * sX, y * sY, headRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Cap Dome (covers back of the head)
+        ctx.fillStyle = capColor;
+        ctx.beginPath();
+        // Draw dome facing opposite of direction dir
+        const startAngle = dir === 1 ? Math.PI * 0.5 : Math.PI * 1.5;
+        const endAngle = dir === 1 ? Math.PI * 1.5 : Math.PI * 0.5;
+        ctx.arc(x * sX, y * sY, headRadius, startAngle, endAngle);
+        ctx.fill();
+        ctx.stroke();
+
+        // Cap Visor (pointing in direction dir)
+        ctx.fillStyle = capColor;
+        ctx.beginPath();
+        ctx.moveTo((x - dir * 1) * sX, (y - headRadius * 0.6) * sY);
+        ctx.lineTo((x + dir * headRadius * 1.45) * sX, y * sY);
+        ctx.lineTo((x - dir * 1) * sX, (y + headRadius * 0.6) * sY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Visor line
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.lineWidth = 1 * sMin;
+        ctx.beginPath();
+        ctx.moveTo((x - dir * 1) * sX, (y - headRadius * 0.6) * sY);
+        ctx.lineTo((x - dir * 1) * sX, (y + headRadius * 0.6) * sY);
         ctx.stroke();
 
         ctx.restore();

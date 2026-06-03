@@ -147,8 +147,10 @@ const SoundManager = (() => {
 
     /**
      * Plays the goal sound (3-note melody + boom)
+     * @param {string} scorerTeamId - The ID of the scoring team
+     * @param {number|null} scorerPlayerNum - The scoring player number (1 or 2)
      */
-    function playGoal(scorerTeamId) {
+    function playGoal(scorerTeamId, scorerPlayerNum = null) {
         if (!audioContext || !sfxEnabled) return;
         resume();
 
@@ -165,7 +167,7 @@ const SoundManager = (() => {
 
         // Play team anthem if provided
         if (scorerTeamId) {
-            playTeamAnthem(scorerTeamId);
+            playTeamAnthem(scorerTeamId, scorerPlayerNum);
         }
 
         // Commentator and crowd sounds
@@ -210,8 +212,9 @@ const SoundManager = (() => {
     /**
      * Plays a team specific anthem with dynamic duration, fallback paths, and randomized selection
      * @param {string} teamId - The ID of the scoring team
+     * @param {number|null} scorerPlayerNum - The scoring player number (1 or 2)
      */
-    async function playTeamAnthem(teamId) {
+    async function playTeamAnthem(teamId, scorerPlayerNum = null) {
         if (!audioContext || !sfxEnabled || !teamId) return;
         resume();
 
@@ -284,6 +287,11 @@ const SoundManager = (() => {
 
             source.start(audioContext.currentTime);
             source.stop(audioContext.currentTime + playDuration);
+
+            // Adjust fans celebration duration to match the anthem duration
+            if (scorerPlayerNum && typeof FansRenderer !== 'undefined' && typeof FansRenderer.adjustCelebrationDuration === 'function') {
+                FansRenderer.adjustCelebrationDuration(scorerPlayerNum, playDuration * 1000);
+            }
 
             // Clean up reference when playback finishes naturally
             source.onended = () => {

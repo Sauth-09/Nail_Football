@@ -639,7 +639,7 @@ const Game = (() => {
 
             // Sound and animation
             const scorerTeamId = (typeof TeamManager !== 'undefined') ? TeamManager.getTeamId(scorer) : null;
-            SoundManager.playGoal(scorerTeamId);
+            SoundManager.playGoal(scorerTeamId, scorer);
             const goalX = goalScored.side === 'right' ? currentField.fieldWidth - 15 : 15;
             const goalY = currentField.fieldHeight / 2;
             AnimationManager.triggerGoalAnimation(scorer, goalX, goalY);
@@ -957,15 +957,14 @@ const Game = (() => {
         SoundManager.playTurnChange();
     }
 
-    /**
-     * Processes a goal scored event (called directly or after animation)
-     * @param {Object} data
-     */
     function processGoalScored(data) {
         scores = data.scores;
         UIManager.updateScore(scores[0], scores[1]);
         const scorerTeamId = (typeof TeamManager !== 'undefined') ? TeamManager.getTeamId(data.scoringPlayer) : null;
-        SoundManager.playGoal(scorerTeamId);
+        SoundManager.playGoal(scorerTeamId, data.scoringPlayer);
+        if (typeof FansRenderer !== 'undefined') {
+            FansRenderer.onGoal(data.scoringPlayer);
+        }
         if (typeof AnimationManager.triggerScoreBounce === 'function') {
             AnimationManager.triggerScoreBounce(data.scoringPlayer);
         }

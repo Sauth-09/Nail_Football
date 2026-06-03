@@ -373,8 +373,11 @@ const FieldRenderer = (() => {
             ctx.arc(x + scaledR * 0.15, y + scaledR * 0.15, scaledR * 0.8, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
+            // Optimize: Only write canvas state changes if they were actually modified
+            if (glow > 0) {
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+            }
         }
     }
 

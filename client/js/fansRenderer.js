@@ -43,6 +43,12 @@ const FansRenderer = (() => {
     /** @type {number|null} Idle animation interval */
     let idleInterval = null;
 
+    /** @type {Object} Track timeout IDs per container side to avoid conflicts */
+    const celebrationTimeouts = {
+        left: null,
+        right: null
+    };
+
     // ═══════════════════════════════════════════
     // Fan Creation
     // ═══════════════════════════════════════════
@@ -229,9 +235,15 @@ const FansRenderer = (() => {
     function onGoal(scoringPlayer) {
         if (!initialized) return;
 
-        // Player 1's fans are on the left, Player 2's on the right
+        const side = scoringPlayer === 1 ? 'left' : 'right';
         const container = scoringPlayer === 1 ? leftContainer : rightContainer;
         if (!container) return;
+
+        // Clear any existing celebration timeout for this side
+        if (celebrationTimeouts[side]) {
+            clearTimeout(celebrationTimeouts[side]);
+            celebrationTimeouts[side] = null;
+        }
 
         // Add celebrating class
         container.classList.add('celebrating');
@@ -240,12 +252,44 @@ const FansRenderer = (() => {
         // Spawn confetti particles
         spawnConfetti(container);
 
+        // Fetch configured duration from global settings, default to 15s
+        const settings = (typeof UIManager !== 'undefined') ? UIManager.getSettings() : { anthemDuration: 15 };
+        const durationMs = (settings.anthemDuration || 15) * 1000;
+
         // Remove after animation
-        setTimeout(() => {
+        celebrationTimeouts[side] = setTimeout(() => {
             if (container) {
                 container.classList.remove('celebrating');
             }
-        }, 5000);
+            celebrationTimeouts[side] = null;
+        }, durationMs);
+    }
+
+    /**
+     * Adjusts the celebration duration for a player's fans (e.g. once music actually starts playing)
+     * @param {number} scoringPlayer - 1 or 2
+     * @param {number} durationMs - New duration in milliseconds
+     */
+    function adjustCelebrationDuration(scoringPlayer, durationMs) {
+        if (!initialized) return;
+
+        const side = scoringPlayer === 1 ? 'left' : 'right';
+        const container = scoringPlayer === 1 ? leftContainer : rightContainer;
+        if (!container) return;
+
+        // Only adjust if currently celebrating
+        if (container.classList.contains('celebrating')) {
+            if (celebrationTimeouts[side]) {
+                clearTimeout(celebrationTimeouts[side]);
+            }
+            celebrationTimeouts[side] = setTimeout(() => {
+                if (container) {
+                    container.classList.remove('celebrating');
+                }
+                celebrationTimeouts[side] = null;
+            }, durationMs);
+            console.log(`[FansRenderer] Adjusted celebration duration for Player ${scoringPlayer} to ${durationMs}ms`);
+        }
     }
 
     /**
@@ -279,6 +323,14 @@ const FansRenderer = (() => {
      * Resets fan states (removes celebrations)
      */
     function reset() {
+        if (celebrationTimeouts.left) {
+            clearTimeout(celebrationTimeouts.left);
+            celebrationTimeouts.left = null;
+        }
+        if (celebrationTimeouts.right) {
+            clearTimeout(celebrationTimeouts.right);
+            celebrationTimeouts.right = null;
+        }
         if (leftContainer) leftContainer.classList.remove('celebrating');
         if (rightContainer) rightContainer.classList.remove('celebrating');
     }
@@ -290,6 +342,14 @@ const FansRenderer = (() => {
         if (idleInterval) {
             clearInterval(idleInterval);
             idleInterval = null;
+        }
+        if (celebrationTimeouts.left) {
+            clearTimeout(celebrationTimeouts.left);
+            celebrationTimeouts.left = null;
+        }
+        if (celebrationTimeouts.right) {
+            clearTimeout(celebrationTimeouts.right);
+            celebrationTimeouts.right = null;
         }
         if (leftContainer && leftContainer.parentNode) {
             leftContainer.parentNode.removeChild(leftContainer);
@@ -312,6 +372,7 @@ const FansRenderer = (() => {
     return {
         init,
         onGoal,
+        adjustCelebrationDuration,
         reset,
         destroy,
         isActive

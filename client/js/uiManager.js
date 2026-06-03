@@ -26,6 +26,7 @@ const UIManager = (() => {
         goalkeeperEnabled: true,
         goalkeeperMode: 'patrol',
         goalkeeperSize: 30,
+        goalkeeperStyle: 'classic',
         ballTheme: 'classic',
         nailTheme: 'metal',
         fireworks: true,
@@ -580,6 +581,7 @@ const UIManager = (() => {
         // Goalkeeper Toggle & Size (Local/Host)
         const gkToggle = document.getElementById('gk-toggle');
         const gkSize = document.getElementById('gk-size');
+        const gkStyle = document.getElementById('gk-style');
         if (gkToggle) {
             gkToggle.addEventListener('change', () => {
                 settings.goalkeeperMode = gkToggle.value;
@@ -593,10 +595,22 @@ const UIManager = (() => {
                 saveSettings();
             });
         }
+        if (gkStyle) {
+            gkStyle.addEventListener('change', () => {
+                settings.goalkeeperStyle = gkStyle.value;
+                // Sync settings screen and challenge modal
+                const settingGkStyle = document.getElementById('setting-gk-style');
+                if (settingGkStyle) settingGkStyle.value = settings.goalkeeperStyle;
+                const challengeGkStyle = document.getElementById('challenge-gk-style');
+                if (challengeGkStyle) challengeGkStyle.value = settings.goalkeeperStyle;
+                saveSettings();
+            });
+        }
 
         // Challenge Goalkeeper Toggle & Size
         const challengeGkToggle = document.getElementById('challenge-gk-toggle');
         const challengeGkSize = document.getElementById('challenge-gk-size');
+        const challengeGkStyle = document.getElementById('challenge-gk-style');
         if (challengeGkToggle) {
             challengeGkToggle.addEventListener('change', () => {
                 settings.goalkeeperMode = challengeGkToggle.value;
@@ -607,6 +621,31 @@ const UIManager = (() => {
         if (challengeGkSize) {
             challengeGkSize.addEventListener('change', () => {
                 settings.goalkeeperSize = parseInt(challengeGkSize.value) || 30;
+                saveSettings();
+            });
+        }
+        if (challengeGkStyle) {
+            challengeGkStyle.addEventListener('change', () => {
+                settings.goalkeeperStyle = challengeGkStyle.value;
+                // Sync settings screen and host panel
+                const gkStyle = document.getElementById('gk-style');
+                if (gkStyle) gkStyle.value = settings.goalkeeperStyle;
+                const settingGkStyle = document.getElementById('setting-gk-style');
+                if (settingGkStyle) settingGkStyle.value = settings.goalkeeperStyle;
+                saveSettings();
+            });
+        }
+
+        // Goalkeeper Style in main settings
+        const settingGkStyle = document.getElementById('setting-gk-style');
+        if (settingGkStyle) {
+            settingGkStyle.addEventListener('change', () => {
+                settings.goalkeeperStyle = settingGkStyle.value;
+                // Sync host panel and challenge modal
+                const gkStyle = document.getElementById('gk-style');
+                if (gkStyle) gkStyle.value = settings.goalkeeperStyle;
+                const challengeGkStyle = document.getElementById('challenge-gk-style');
+                if (challengeGkStyle) challengeGkStyle.value = settings.goalkeeperStyle;
                 saveSettings();
             });
         }
@@ -1403,7 +1442,8 @@ const UIManager = (() => {
             'setting-volume': settings.volume,
             'setting-sfx': settings.sfx ? '1' : '0',
             'setting-vibration': settings.vibration ? '1' : '0',
-            'setting-anthem-duration': settings.anthemDuration || 15
+            'setting-anthem-duration': settings.anthemDuration || 15,
+            'setting-gk-style': settings.goalkeeperStyle || 'classic'
         };
 
         for (const [id, value] of Object.entries(els)) {
@@ -1429,14 +1469,18 @@ const UIManager = (() => {
 
         const gkToggle = document.getElementById('gk-toggle');
         const gkSize = document.getElementById('gk-size');
+        const gkStyle = document.getElementById('gk-style');
         const gkMode = settings.goalkeeperMode || (settings.goalkeeperEnabled ? 'patrol' : 'off');
         if (gkToggle) gkToggle.value = gkMode;
         if (gkSize && settings.goalkeeperSize) gkSize.value = settings.goalkeeperSize;
+        if (gkStyle && settings.goalkeeperStyle) gkStyle.value = settings.goalkeeperStyle;
 
         const challengeGkToggle = document.getElementById('challenge-gk-toggle');
         const challengeGkSize = document.getElementById('challenge-gk-size');
+        const challengeGkStyle = document.getElementById('challenge-gk-style');
         if (challengeGkToggle) challengeGkToggle.value = gkMode;
         if (challengeGkSize && settings.goalkeeperSize) challengeGkSize.value = settings.goalkeeperSize;
+        if (challengeGkStyle && settings.goalkeeperStyle) challengeGkStyle.value = settings.goalkeeperStyle;
 
         const volumeLabel = document.getElementById('volume-label');
         if (volumeLabel) volumeLabel.textContent = `${settings.volume}%`;
